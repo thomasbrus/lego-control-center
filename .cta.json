@@ -8,11 +8,5 @@
   "git": true,
   "version": 1,
   "framework": "react-cra",
-  "chosenAddOns": [
-    "cloudflare",
-    "start",
-    "form",
-    "store",
-    "tanstack-query"
-  ]
+  "chosenAddOns": ["start", "form", "store", "tanstack-query"]
 }

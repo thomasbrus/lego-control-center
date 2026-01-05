@@ -1,6 +1,6 @@
-import { Card } from "@/components/ui";
+import { Card, Heading } from "@/components/ui";
 import type { QueryClient } from "@tanstack/react-query";
-import { HeadContent, Outlet, createRootRouteWithContext } from "@tanstack/react-router";
+import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import { styled } from "styled-system/jsx";
 import appCss from "../styles/index.css?url";
 
@@ -36,7 +36,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootComponent() {
   return (
-    <styled.div mx="auto" bg="gray.2">
+    <styled.div mx="auto" bg="gray.2" minH="dvh" display="grid" gridTemplateRows="auto 1fr">
+      <styled.header bg="gray.surface.bg" p="8" borderBottomWidth="1" borderColor="border" pos="sticky" top="0" zIndex="docked">
+        <Heading>LEGO Control Center</Heading>
+      </styled.header>
+
       <Outlet />
     </styled.div>
   );
@@ -44,11 +48,14 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
         <HeadContent />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Scripts />
+      </body>
     </html>
   );
 }
