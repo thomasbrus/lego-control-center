@@ -84,6 +84,10 @@ export default defineConfig({
           gray: sand,
           red: red,
           green: green,
+
+          primary: yellow,
+          success: green,
+          danger: red,
         },
 
         shadows: shadows,

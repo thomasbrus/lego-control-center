@@ -1,8 +1,13 @@
 export { AbsoluteCenter, type AbsoluteCenterProps } from "./absolute-center";
+export * as Alert from "./alert";
+export { Badge, type BadgeProps } from "./badge";
 export { Button, ButtonGroup, type ButtonGroupProps, type ButtonProps } from "./button";
 export * as Card from "./card";
 export { Group, type GroupProps } from "./group";
 export { Heading, type HeadingProps } from "./heading";
+export { IconButton, type IconButtonProps } from "./icon-button";
 export { Loader, type LoaderProps } from "./loader";
+export * as Menu from "./menu";
 export { Spinner, type SpinnerProps } from "./spinner";
+export * as Table from "./table";
 export { Text, type TextProps } from "./text";

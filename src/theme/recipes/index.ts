@@ -1,3 +1,7 @@
+import { menu } from "./menu";
+import { badge } from "./badge";
+import { table } from "./table";
+import { alert } from "./alert";
 import { heading } from "./heading";
 import { text } from "./text";
 import { spinner } from "./spinner";
@@ -12,6 +16,10 @@ export const recipes = {
   absoluteCenter,
   spinner,
   text,
-  heading
+  heading,
+  alert,
+  table,
+  badge,
+  menu
 }
 export const slotRecipes = {}
