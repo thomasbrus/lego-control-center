@@ -5,19 +5,39 @@ import { BluetoothIcon } from "lucide-react";
 import { Box, styled } from "styled-system/jsx";
 import { ErrorAlert } from "./ui/error-alert";
 
-export function HubCard() {
+export function HubsCard() {
   const { hubs, requestAndConnect, isConnecting, error } = useHubs();
 
   async function handleConnect() {
     const hub = await requestAndConnect();
 
-    console.log("Hub:", hub!);
+    api.subscribeToUart(hub!, (data) => {
+      console.log(`UART data from hub ${hub!.name}:`, data);
+    });
+
+    api.subscribeToControlEvents(hub!, (event) => {
+      const message = new TextDecoder().decode(event.buffer.slice(1));
+      console.log(`Control event from hub ${hub!.name}:`, message);
+    });
+
+    console.log("Preparing...");
+
+    console.log("Starting REPL program...");
+    await api.startRepl(hub!);
+
+    console.log("Waiting for 5 seconds...");
+
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    console.log("Writing to control events...");
+
+    api.writeStdin(hub!, new TextEncoder().encode("hub.light.on(Color.GREEN)\r\n"));
   }
 
   return (
     <Card.Root>
       <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
-        <Card.Title>Hub</Card.Title>
+        <Card.Title>Hubs</Card.Title>
         <Button colorPalette="[primary]" onClick={handleConnect} loading={isConnecting}>
           <BluetoothIcon />
           Connect

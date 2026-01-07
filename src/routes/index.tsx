@@ -1,5 +1,5 @@
-// import { HubCard } from "@/components/hub";
-import { HubCard } from "@/components/hub";
+// import { HubsCard } from "@/components/hub";
+import { HubsCard } from "@/components/hubs";
 import { HubsProvider } from "@/contexts/hubs";
 import { createFileRoute } from "@tanstack/react-router";
 import { styled } from "styled-system/jsx";
@@ -11,7 +11,7 @@ function RouteComponent() {
     <HubsProvider>
       <styled.main p="8" display="grid" gridTemplateColumns={{ lg: "1fr 1fr 1fr" }} gap="8">
         <div>
-          <HubCard />
+          <HubsCard />
         </div>
       </styled.main>
     </HubsProvider>
