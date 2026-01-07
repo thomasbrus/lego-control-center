@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright (c) 2021 The Pybricks Authors
-//
 // Constants and helper functions for LEGO Wireless protocol v3.
 //
 // https://lego.github.io/lego-ble-wireless-protocol-docs/

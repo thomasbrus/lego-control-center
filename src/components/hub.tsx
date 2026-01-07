@@ -1,44 +1,43 @@
 import { Badge, Button, Card, Group, Heading, Table, Text } from "@/components/ui";
-import { BluetoothDeviceInfo, useBluetooth } from "@/hooks/use-bluetooth";
+import { useDevices } from "@/hooks/use-devices";
 import { deviceInformationServiceUUID } from "@/lib/ble-device-info-service/protocol";
 import { nordicUartServiceUUID } from "@/lib/ble-nordic-uart-service/protocol";
 import { pybricksServiceUUID } from "@/lib/ble-pybricks-service/protocol";
+import hub from "@/lib/hub";
 import { BluetoothIcon } from "lucide-react";
 import { Box, styled } from "styled-system/jsx";
 import { ErrorAlert } from "./ui/error-alert";
 
 export function HubCard() {
-  const { device, isConnecting, error, requestDevice, connect, disconnect } = useBluetooth();
+  const { devices, requestAndConnect, isConnecting, error } = useDevices();
 
   async function handleConnect() {
-    await requestDevice({
+    await requestAndConnect({
       filters: [{ services: [pybricksServiceUUID] }],
       optionalServices: [pybricksServiceUUID, deviceInformationServiceUUID, nordicUartServiceUUID],
     });
-
-    await connect();
   }
 
   return (
     <Card.Root>
       <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
         <Card.Title>Hub</Card.Title>
-        <Button colorPalette="[primary]" onClick={handleConnect} loading={isConnecting} disabled={device?.connected}>
+        <Button colorPalette="[primary]" onClick={handleConnect} loading={isConnecting}>
           <BluetoothIcon />
           Connect
         </Button>
       </Card.Header>
-      <Card.Body>{device?.connected ? <HubTable connectedDevice={device} disconnect={disconnect} /> : <HubEmptyState />}</Card.Body>
+      <Card.Body>{devices.length ? <HubsTable connectedDevices={devices} /> : <HubEmptyState />}</Card.Body>
       {error && (
         <Card.Footer>
-          <ErrorAlert description={error} />
+          <ErrorAlert description={error.message} />
         </Card.Footer>
       )}
     </Card.Root>
   );
 }
 
-function HubTable({ connectedDevice, disconnect }: { connectedDevice: BluetoothDeviceInfo; disconnect: () => void }) {
+function HubsTable({ connectedDevices }: { connectedDevices: BluetoothDevice[] }) {
   return (
     <Table.Root variant="surface">
       <Table.Head>
@@ -49,24 +48,32 @@ function HubTable({ connectedDevice, disconnect }: { connectedDevice: BluetoothD
         </Table.Row>
       </Table.Head>
       <Table.Body>
-        <Table.Row>
-          <Table.Cell>{connectedDevice.name}</Table.Cell>
-          <Table.Cell>
-            <Badge colorPalette="[success]">Connected</Badge>
-          </Table.Cell>
-          <Table.Cell textAlign="right">
-            <Group attached>
-              <Button size="xs" variant="surface" onClick={disconnect}>
-                Disconnect
-              </Button>
-              <Button size="xs" variant="surface" colorPalette="[danger]">
-                Shutdown
-              </Button>
-            </Group>
-          </Table.Cell>
-        </Table.Row>
+        {connectedDevices.map((device) => (
+          <HubsTableRow key={device.id} connectedDevice={device} />
+        ))}
       </Table.Body>
     </Table.Root>
+  );
+}
+
+function HubsTableRow({ connectedDevice }: { connectedDevice: BluetoothDevice }) {
+  return (
+    <Table.Row>
+      <Table.Cell>{connectedDevice.name}</Table.Cell>
+      <Table.Cell>
+        <Badge colorPalette="[success]">Connected</Badge>
+      </Table.Cell>
+      <Table.Cell textAlign="right">
+        <Group attached>
+          <Button size="xs" variant="surface" onClick={() => hub.disconnect(connectedDevice)}>
+            Disconnect
+          </Button>
+          <Button size="xs" variant="surface" colorPalette="[danger]">
+            Shutdown
+          </Button>
+        </Group>
+      </Table.Cell>
+    </Table.Row>
   );
 }
 

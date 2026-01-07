@@ -1,8 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright (c) 2020-2025 The Pybricks Authors
-//
-// Definitions related to the Pybricks Bluetooth low energy GATT service.
-
 import { assert } from "../utils";
 
 /** Pybricks service UUID. */
