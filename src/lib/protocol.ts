@@ -1,9 +1,9 @@
-import { assert } from "../utils";
+import { assert } from "./utils";
 
 /** Pybricks service UUID. */
 export const pybricksServiceUUID = "c5f50001-8280-46da-89f4-6d8051e4aeef";
 /** Pybricks control/event characteristic UUID. */
-export const pybricksControlEventCharacteristicUUID = "c5f50002-8280-46da-89f4-6d8051e4aeef";
+export const pybricksControlCharacteristicUUID = "c5f50002-8280-46da-89f4-6d8051e4aeef";
 /** Pybricks hub capabilities characteristic UUID. */
 export const pybricksHubCapabilitiesCharacteristicUUID = "c5f50003-8280-46da-89f4-6d8051e4aeef";
 
@@ -95,7 +95,7 @@ export enum BuiltinProgramId {
  *
  * @since Pybricks Profile v1.0.0
  */
-export function createStopUserProgramCommand(): Uint8Array {
+export function createStopUserProgramCommand(): Uint8Array<ArrayBuffer> {
   const msg = new Uint8Array(1);
   msg[0] = CommandType.StopUserProgram;
   return msg;
@@ -110,7 +110,7 @@ export function createStopUserProgramCommand(): Uint8Array {
  *
  * @since Pybricks Profile v1.4.0
  */
-export function createStartUserProgramCommand(progId: number | BuiltinProgramId): Uint8Array {
+export function createStartUserProgramCommand(progId: number | BuiltinProgramId) {
   const msg = new Uint8Array(2);
   msg[0] = CommandType.StartUserProgram;
   msg[1] = progId;
@@ -122,7 +122,7 @@ export function createStartUserProgramCommand(progId: number | BuiltinProgramId)
  *
  * @since Pybricks Profile v1.2.0 - removed in v1.4.0
  */
-export function createLegacyStartUserProgramCommand(): Uint8Array {
+export function createLegacyStartUserProgramCommand(): Uint8Array<ArrayBuffer> {
   const msg = new Uint8Array(1);
   msg[0] = CommandType.StartUserProgram;
   return msg;
@@ -133,7 +133,7 @@ export function createLegacyStartUserProgramCommand(): Uint8Array {
  *
  * @since Pybricks Profile v1.2.0 - removed in v1.4.0
  */
-export function createLegacyStartReplCommand(): Uint8Array {
+export function createLegacyStartReplCommand(): Uint8Array<ArrayBuffer> {
   const msg = new Uint8Array(1);
   msg[0] = CommandType.StartRepl;
   return msg;
@@ -145,7 +145,7 @@ export function createLegacyStartReplCommand(): Uint8Array {
  *
  * @since Pybricks Profile v1.2.0
  */
-export function createWriteUserProgramMetaCommand(size: number): Uint8Array {
+export function createWriteUserProgramMetaCommand(size: number): Uint8Array<ArrayBuffer> {
   const msg = new Uint8Array(5);
   const view = new DataView(msg.buffer);
   view.setUint8(0, CommandType.WriteUserProgramMeta);
@@ -160,7 +160,7 @@ export function createWriteUserProgramMetaCommand(size: number): Uint8Array {
  *
  * @since Pybricks Profile v1.2.0
  */
-export function createWriteUserRamCommand(offset: number, payload: ArrayBuffer): Uint8Array {
+export function createWriteUserRamCommand(offset: number, payload: ArrayBuffer): Uint8Array<ArrayBuffer> {
   const msg = new Uint8Array(5 + payload.byteLength);
   const view = new DataView(msg.buffer);
   view.setUint8(0, CommandType.WriteUserRam);
@@ -175,7 +175,7 @@ export function createWriteUserRamCommand(offset: number, payload: ArrayBuffer):
  *
  * @since Pybricks Profile v1.3.0.
  */
-export function createWriteStdinCommand(payload: ArrayBuffer): Uint8Array {
+export function createWriteStdinCommand(payload: ArrayBuffer): Uint8Array<ArrayBuffer> {
   const msg = new Uint8Array(1 + payload.byteLength);
   const view = new DataView(msg.buffer);
   view.setUint8(0, CommandType.WriteStdin);
@@ -190,7 +190,7 @@ export function createWriteStdinCommand(payload: ArrayBuffer): Uint8Array {
  *
  * @since Pybricks Profile v1.4.0.
  */
-export function createWriteAppDataCommand(offset: number, payload: ArrayBuffer): Uint8Array {
+export function createWriteAppDataCommand(offset: number, payload: ArrayBuffer): Uint8Array<ArrayBuffer> {
   const msg = new Uint8Array(1 + 2 + payload.byteLength);
   const view = new DataView(msg.buffer);
   view.setUint8(0, CommandType.WriteAppData);

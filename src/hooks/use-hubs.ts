@@ -1,12 +1,12 @@
 import { HubsContext } from "@/contexts/hubs";
-import { deviceInformationServiceUUID } from "@/lib/ble-device-info-service/protocol";
-import { nordicUartServiceUUID } from "@/lib/ble-nordic-uart-service/protocol";
-import { pybricksHubCapabilitiesCharacteristicUUID, pybricksServiceUUID } from "@/lib/ble-pybricks-service/protocol";
+import { assertConnected } from "@/lib/device";
+import { pybricksHubCapabilitiesCharacteristicUUID, pybricksServiceUUID } from "@/lib/protocol";
+import { startReplUserProgram } from "@/lib/pybricks";
 import { useCallback, useContext, useState } from "react";
 
 const requestDeviceOptions = {
   filters: [{ services: [pybricksServiceUUID] }],
-  optionalServices: [pybricksServiceUUID, deviceInformationServiceUUID, nordicUartServiceUUID],
+  optionalServices: [pybricksServiceUUID],
 };
 
 export function useHubs() {
@@ -31,8 +31,8 @@ export function useHubs() {
       });
 
       await device.gatt?.connect();
-
       const capabilities = await getCapabilities(device);
+      await startReplUserProgram(device);
 
       const hub = {
         id: device.id,
@@ -61,9 +61,7 @@ export function useHubs() {
 }
 
 async function getCapabilities(device: BluetoothDevice) {
-  if (!device.gatt?.connected) {
-    throw new Error("Device is not connected");
-  }
+  assertConnected(device);
 
   try {
     const primaryService = await device.gatt.getPrimaryService(pybricksServiceUUID);

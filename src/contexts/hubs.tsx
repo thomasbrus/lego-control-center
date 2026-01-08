@@ -1,4 +1,4 @@
-import { Hub } from "@/lib/hub/api";
+import { Hub } from "@/lib/hub";
 import { createContext, useState } from "react";
 
 interface HubsContextValue {
