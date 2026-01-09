@@ -1,7 +1,7 @@
 import { HubsContext } from "@/contexts/hubs";
 import { ConnectionStatus } from "@/lib/connection-status";
 import { assertConnected } from "@/lib/device";
-import { Hub } from "@/lib/hub";
+import { disconnect, Hub, shutdown } from "@/lib/hub";
 import { pybricksHubCapabilitiesCharacteristicUUID, pybricksServiceUUID } from "@/lib/protocol";
 import { getPybricksControlCharacteristic, startReplUserProgram } from "@/lib/pybricks";
 import { useCallback, useContext, useRef } from "react";
@@ -99,7 +99,23 @@ export function useHubs() {
     [addHub, removeHub, updateHubStatus]
   );
 
-  return { hubs, requestAndConnect };
+  const disconnectHub = useCallback(
+    async (hub: Hub) => {
+      removeHub(hub.id);
+      await disconnect(hub);
+    },
+    [removeHub]
+  );
+
+  const shutdownHub = useCallback(
+    async (hub: Hub) => {
+      removeHub(hub.id);
+      await shutdown(hub);
+    },
+    [removeHub]
+  );
+
+  return { hubs, requestAndConnect, disconnectHub, shutdownHub };
 }
 
 async function getCapabilities(device: BluetoothDevice) {

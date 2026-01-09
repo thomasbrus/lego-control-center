@@ -25,7 +25,13 @@ export function assertHubReady(hub: Hub): asserts hub is ReadyHub {
 }
 
 export async function disconnect({ device }: Hub) {
-  await stopUserProgram(device);
+  // Try to stop user program gracefully, but don't fail if not possible
+  // (e.g., during connection or if already disconnected)
+  try {
+    await stopUserProgram(device);
+  } catch {
+    // Ignore errors - device may not be fully connected
+  }
   device.gatt?.disconnect();
 }
 

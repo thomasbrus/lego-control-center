@@ -3,7 +3,7 @@ import { HubsProvider } from "@/contexts/hubs";
 import { ConnectionStatus, useHubs } from "@/hooks/use-hubs";
 import { useStateReconciler } from "@/hooks/use-state-reconciler";
 import { DesiredState, LightState } from "@/lib/desired-state";
-import { disconnect, Hub, shutdown, writeStdinWithResponse } from "@/lib/hub";
+import { Hub, writeStdinWithResponse } from "@/lib/hub";
 import { RadioGroupValueChangeDetails } from "@ark-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { BluetoothIcon, BracesIcon, LightbulbIcon } from "lucide-react";
@@ -137,15 +137,19 @@ function getStatusBadge(status: ConnectionStatus) {
 }
 
 function DetailsCard({ hub }: { hub: Hub }) {
+  const { shutdownHub, disconnectHub } = useHubs();
+
+  const isReady = hub.status === ConnectionStatus.Ready;
+
   return (
     <Card.Root>
       <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
         <Card.Title>{hub.name}</Card.Title>
         <Group attached>
-          <Button size="xs" variant="surface" colorPalette="[danger]" onClick={() => shutdown(hub)}>
+          <Button size="xs" variant="surface" colorPalette="[danger]" onClick={() => shutdownHub(hub)} disabled={!isReady}>
             Shutdown
           </Button>
-          <Button size="xs" variant="surface" onClick={() => disconnect(hub)}>
+          <Button size="xs" variant="surface" onClick={() => disconnectHub(hub)}>
             Disconnect
           </Button>
         </Group>
