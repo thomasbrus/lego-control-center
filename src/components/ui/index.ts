@@ -5,9 +5,11 @@ export { Button, ButtonGroup, type ButtonGroupProps, type ButtonProps } from "./
 export * as Card from "./card";
 export { Group, type GroupProps } from "./group";
 export { Heading, type HeadingProps } from "./heading";
+export { Icon, type IconProps } from "./icon";
 export { IconButton, type IconButtonProps } from "./icon-button";
 export { Loader, type LoaderProps } from "./loader";
 export * as Menu from "./menu";
+export * as RadioCardGroup from "./radio-card-group";
 export { Spinner, type SpinnerProps } from "./spinner";
 export * as Table from "./table";
 export { Text, type TextProps } from "./text";

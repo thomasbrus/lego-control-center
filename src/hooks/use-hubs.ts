@@ -1,17 +1,20 @@
 import { HubsContext } from "@/contexts/hubs";
 import { assertConnected } from "@/lib/device";
 import { pybricksHubCapabilitiesCharacteristicUUID, pybricksServiceUUID } from "@/lib/protocol";
-import { startReplUserProgram } from "@/lib/pybricks";
-import { useCallback, useContext, useState } from "react";
+import { getPybricksControlCharacteristic, startReplUserProgram } from "@/lib/pybricks";
+import { useCallback, useContext, useRef, useState } from "react";
 
 const requestDeviceOptions = {
   filters: [{ services: [pybricksServiceUUID] }],
   optionalServices: [pybricksServiceUUID],
 };
 
+export type NotificationHandler = (value: DataView) => void;
+
 export function useHubs() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const unsubscribeRef = useRef<Map<string, () => Promise<void>>>(new Map());
 
   const value = useContext(HubsContext);
 
@@ -19,43 +22,73 @@ export function useHubs() {
 
   const { hubs, addHub, removeHub } = value;
 
-  const requestAndConnect = useCallback(async () => {
-    setIsConnecting(true);
-    setError(null);
+  const requestAndConnect = useCallback(
+    async (onNotification?: NotificationHandler) => {
+      setIsConnecting(true);
+      setError(null);
 
-    try {
-      const device = await navigator.bluetooth.requestDevice(requestDeviceOptions);
+      try {
+        const device = await navigator.bluetooth.requestDevice(requestDeviceOptions);
 
-      device.addEventListener("gattserverdisconnected", () => {
-        removeHub(device.id);
-      });
+        device.addEventListener("gattserverdisconnected", async () => {
+          // Clean up notifications on disconnect
+          const unsubscribe = unsubscribeRef.current.get(device.id);
+          if (unsubscribe) {
+            await unsubscribe();
+            unsubscribeRef.current.delete(device.id);
+          }
+          removeHub(device.id);
+        });
 
-      await device.gatt?.connect();
-      const capabilities = await getCapabilities(device);
-      await startReplUserProgram(device);
+        await device.gatt?.connect();
+        const capabilities = await getCapabilities(device);
+        await startReplUserProgram(device);
 
-      const hub = {
-        id: device.id,
-        name: device.name,
-        device,
-        capabilities,
-      };
+        // Set up notifications if handler is provided
+        if (onNotification) {
+          const controlCharacteristic = await getPybricksControlCharacteristic(device);
 
-      addHub(hub);
+          const listener = (event: Event) => {
+            const target = event.target as BluetoothRemoteGATTCharacteristic;
+            if (target.value) {
+              onNotification(target.value);
+            }
+          };
 
-      return hub;
-    } catch (e) {
-      if (e instanceof Error) {
-        setError(e);
-      } else {
-        setError(new Error("Unknown error occurred"));
+          controlCharacteristic.addEventListener("characteristicvaluechanged", listener);
+          await controlCharacteristic.startNotifications();
+
+          const unsubscribe = async () => {
+            controlCharacteristic.removeEventListener("characteristicvaluechanged", listener);
+            try {
+              await controlCharacteristic.stopNotifications();
+            } catch {
+              // Ignore errors - device is likely already disconnected
+            }
+          };
+
+          unsubscribeRef.current.set(device.id, unsubscribe);
+        }
+
+        const hub = {
+          id: device.id,
+          name: device.name,
+          device,
+          capabilities,
+        };
+
+        addHub(hub);
+
+        return hub;
+      } catch (e) {
+        setError(e instanceof Error ? e : new Error(String(e)));
+        return null;
+      } finally {
+        setIsConnecting(false);
       }
-
-      return null;
-    } finally {
-      setIsConnecting(false);
-    }
-  }, [addHub, removeHub]);
+    },
+    [addHub, removeHub]
+  );
 
   return { hubs, requestAndConnect, isConnecting, error };
 }

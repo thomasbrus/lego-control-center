@@ -1,4 +1,5 @@
 import { animationStyles } from "@/theme/animation-styles";
+import { blue } from "@/theme/colors/blue";
 import { green } from "@/theme/colors/green";
 import { red } from "@/theme/colors/red";
 import { sand } from "@/theme/colors/sand";
@@ -84,6 +85,7 @@ export default defineConfig({
           gray: sand,
           red: red,
           green: green,
+          blue: blue,
 
           primary: yellow,
           success: green,

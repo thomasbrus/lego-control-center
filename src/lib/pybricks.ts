@@ -15,30 +15,50 @@ async function getPybricksService(device: BluetoothDevice) {
   return device.gatt.getPrimaryService(pybricksServiceUUID);
 }
 
-async function getPybricksControlCharacteristic(device: BluetoothDevice) {
+export async function getPybricksControlCharacteristic(device: BluetoothDevice) {
   const pybricksService = await getPybricksService(device);
   return pybricksService.getCharacteristic(pybricksControlCharacteristicUUID);
 }
 
-async function writeCommand(device: BluetoothDevice, value: Uint8Array<ArrayBuffer>) {
-  const controlCharacteristic = await getPybricksControlCharacteristic(device);
-  await controlCharacteristic.writeValueWithResponse(value);
-}
-
-export async function writeStdin(device: BluetoothDevice, message: string, maxWriteSize: number) {
-  const controlCharacteristic = await getPybricksControlCharacteristic(device);
+export function createWriteStdinCommands(message: string, maxWriteSize: number) {
   const maxPayloadSize = maxWriteSize - 1;
   const data = encodeMessage(message);
+  const commands: Uint8Array<ArrayBuffer>[] = [];
 
   for (let offset = 0; offset < data.length; offset += maxPayloadSize) {
     const chunk = data.slice(offset, offset + maxPayloadSize);
     const command = createWriteStdinCommand(chunk.buffer);
-    await controlCharacteristic.writeValueWithResponse(command.buffer as ArrayBuffer);
+    commands.push(command);
+  }
+
+  return commands;
+}
+
+export async function writeCommandsWithResponse(device: BluetoothDevice, commands: Uint8Array<ArrayBuffer>[]) {
+  for (const command of commands) {
+    await writeCommandWithResponse(device, command);
   }
 }
 
+export async function writeCommandsWithoutResponse(device: BluetoothDevice, commands: Uint8Array<ArrayBuffer>[]) {
+  for (const command of commands) {
+    await writeCommandWithoutResponse(device, command);
+  }
+}
+
+async function writeCommandWithResponse(device: BluetoothDevice, value: Uint8Array<ArrayBuffer>) {
+  const controlCharacteristic = await getPybricksControlCharacteristic(device);
+  await controlCharacteristic.writeValueWithResponse(value);
+}
+
+async function writeCommandWithoutResponse(device: BluetoothDevice, value: Uint8Array<ArrayBuffer>) {
+  const controlCharacteristic = await getPybricksControlCharacteristic(device);
+  // Seems not to do anything when used with the Pybricks control characteristic
+  await controlCharacteristic.writeValueWithoutResponse(value);
+}
+
 async function startUserProgram(device: BluetoothDevice, programId: BuiltinProgramId) {
-  await writeCommand(device, createStartUserProgramCommand(programId));
+  await writeCommandWithResponse(device, createStartUserProgramCommand(programId));
 }
 
 export async function startReplUserProgram(device: BluetoothDevice) {
@@ -46,5 +66,5 @@ export async function startReplUserProgram(device: BluetoothDevice) {
 }
 
 export async function stopUserProgram(device: BluetoothDevice) {
-  await writeCommand(device, createStopUserProgramCommand());
+  await writeCommandWithResponse(device, createStopUserProgramCommand());
 }

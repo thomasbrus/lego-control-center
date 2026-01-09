@@ -1,3 +1,5 @@
+import { radioCardGroup } from "./radio-card-group";
+import { icon } from "./icon";
 import { menu } from "./menu";
 import { badge } from "./badge";
 import { table } from "./table";
@@ -20,6 +22,8 @@ export const recipes = {
   alert,
   table,
   badge,
-  menu
+  menu,
+  icon,
+  radioCardGroup
 }
 export const slotRecipes = {}
