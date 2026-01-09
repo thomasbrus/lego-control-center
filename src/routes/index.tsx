@@ -1,9 +1,10 @@
 import { Badge, Button, Card, Group, Heading, Icon, RadioCardGroup, Table, Text } from "@/components/ui";
-import { HubsProvider } from "@/contexts/hubs";
-import { ConnectionStatus, useHubs } from "@/hooks/use-hubs";
-import { useStateReconciler } from "@/hooks/use-state-reconciler";
-import { DesiredState, LightState } from "@/lib/desired-state";
-import { Hub, writeStdinWithResponse } from "@/lib/hub";
+import { useDesiredState } from "@/lib/desired-state/hooks";
+import { DesiredState, LightState } from "@/lib/desired-state/types";
+import { writeStdinWithResponse } from "@/lib/hub/actions";
+import { HubsProvider } from "@/lib/hub/context";
+import { useHubs } from "@/lib/hub/hooks";
+import { Hub, HubStatus } from "@/lib/hub/types";
 import { RadioGroupValueChangeDetails } from "@ark-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { BluetoothIcon, BracesIcon, LightbulbIcon } from "lucide-react";
@@ -58,11 +59,11 @@ export function Columns() {
 function HubColumn({ hub }: { hub: Hub }) {
   const [desiredState, setDesiredState] = useState<DesiredState>({ light: LightState.GREEN });
 
-  const isReady = hub.status === ConnectionStatus.Ready;
+  const isReady = hub.status === HubStatus.Ready;
 
   const commitCallback = useCallback(
     async (state: DesiredState) => {
-      if (hub.status !== ConnectionStatus.Ready) return;
+      if (hub.status !== HubStatus.Ready) return;
 
       if (state.light === LightState.OFF) {
         await writeStdinWithResponse(hub, `hub.light.off()\r\n`);
@@ -73,10 +74,10 @@ function HubColumn({ hub }: { hub: Hub }) {
     [hub]
   );
 
-  const { reconcileState } = useStateReconciler(commitCallback);
+  const { reconcileState } = useDesiredState(commitCallback);
 
   useEffect(() => {
-    if (hub.status !== ConnectionStatus.Ready) return;
+    if (hub.status !== HubStatus.Ready) return;
     reconcileState(desiredState);
   }, [JSON.stringify(desiredState), reconcileState, hub.status]);
 
@@ -117,19 +118,19 @@ function ConnectHubCard({ title, description }: { title?: string; description: s
   );
 }
 
-function getStatusBadge(status: ConnectionStatus) {
+function getStatusBadge(status: HubStatus) {
   switch (status) {
-    case ConnectionStatus.Ready:
+    case HubStatus.Ready:
       return <Badge colorPalette="[success]">Ready</Badge>;
-    case ConnectionStatus.Connecting:
+    case HubStatus.Connecting:
       return <Badge colorPalette="[warning]">Connecting...</Badge>;
-    case ConnectionStatus.RetrievingCapabilities:
+    case HubStatus.RetrievingCapabilities:
       return <Badge colorPalette="[warning]">Retrieving capabilities...</Badge>;
-    case ConnectionStatus.StartingRepl:
+    case HubStatus.StartingRepl:
       return <Badge colorPalette="[warning]">Starting REPL...</Badge>;
-    case ConnectionStatus.Disconnected:
+    case HubStatus.Disconnected:
       return <Badge colorPalette="[danger]">Disconnected</Badge>;
-    case ConnectionStatus.Error:
+    case HubStatus.Error:
       return <Badge colorPalette="[danger]">Error</Badge>;
     default:
       return <Badge>Unknown</Badge>;
@@ -139,7 +140,7 @@ function getStatusBadge(status: ConnectionStatus) {
 function DetailsCard({ hub }: { hub: Hub }) {
   const { shutdownHub, disconnectHub } = useHubs();
 
-  const isReady = hub.status === ConnectionStatus.Ready;
+  const isReady = hub.status === HubStatus.Ready;
 
   return (
     <Card.Root>

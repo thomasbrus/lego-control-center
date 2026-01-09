@@ -1,12 +1,10 @@
-import { HubsContext } from "@/contexts/hubs";
-import { ConnectionStatus } from "@/lib/connection-status";
-import { assertConnected } from "@/lib/device";
-import { disconnect, Hub, shutdown } from "@/lib/hub";
-import { pybricksHubCapabilitiesCharacteristicUUID, pybricksServiceUUID } from "@/lib/protocol";
-import { getPybricksControlCharacteristic, startReplUserProgram } from "@/lib/pybricks";
+import { assertConnected } from "@/lib/device/utils";
+import { disconnect, shutdown } from "@/lib/hub/actions";
+import { HubsContext } from "@/lib/hub/context";
+import { Hub, HubStatus } from "@/lib/hub/types";
+import { getPybricksControlCharacteristic, startReplUserProgram } from "@/lib/pybricks/commands";
+import { pybricksHubCapabilitiesCharacteristicUUID, pybricksServiceUUID } from "@/lib/pybricks/constants";
 import { useCallback, useContext, useRef } from "react";
-
-export { ConnectionStatus } from "@/lib/connection-status";
 
 const requestDeviceOptions = {
   filters: [{ services: [pybricksServiceUUID] }],
@@ -34,7 +32,7 @@ export function useHubs() {
           id: device.id,
           name: device.name,
           device,
-          status: ConnectionStatus.Connecting,
+          status: HubStatus.Connecting,
         };
 
         addHub(hub);
@@ -50,9 +48,9 @@ export function useHubs() {
         });
 
         await device.gatt?.connect();
-        updateHubStatus(device.id, ConnectionStatus.RetrievingCapabilities);
+        updateHubStatus(device.id, HubStatus.RetrievingCapabilities);
         const capabilities = await getCapabilities(device);
-        updateHubStatus(device.id, ConnectionStatus.StartingRepl);
+        updateHubStatus(device.id, HubStatus.StartingRepl);
         await startReplUserProgram(device);
 
         // Set up notifications if handler is provided
@@ -84,7 +82,7 @@ export function useHubs() {
         // Update hub with final status and capabilities
         const connectedHub: Hub = {
           ...hub,
-          status: ConnectionStatus.Ready,
+          status: HubStatus.Ready,
           capabilities,
         };
 

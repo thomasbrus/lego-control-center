@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 
-export function useStateReconciler<State>(commitCallback: (state: State) => Promise<void>) {
+export function useDesiredState<State>(commitCallback: (state: State) => Promise<void>) {
   const [isReconciling, setIsConverging] = useState(false);
   const [isStale, setIsStale] = useState(false);
   const [committedAt, setCommittedAt] = useState<Date | null>(null);

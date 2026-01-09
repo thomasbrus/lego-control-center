@@ -1,12 +1,11 @@
-import { ConnectionStatus } from "@/lib/connection-status";
-import { Hub } from "@/lib/hub";
+import { Hub, HubStatus } from "@/lib/hub/types";
 import { createContext, useState } from "react";
 
 interface HubsContextValue {
   hubs: Hub[];
   addHub: (hub: Hub) => void;
   removeHub: (id: Hub["id"]) => void;
-  updateHubStatus: (id: Hub["id"], status: ConnectionStatus) => void;
+  updateHubStatus: (id: Hub["id"], status: HubStatus) => void;
 }
 
 export const HubsContext = createContext<HubsContextValue | undefined>(undefined);
@@ -22,7 +21,7 @@ export function HubsProvider({ children }: { children: React.ReactNode }) {
     setHubs((prev) => mapWithoutKey(prev, id));
   }
 
-  function updateHubStatus(id: Hub["id"], status: ConnectionStatus) {
+  function updateHubStatus(id: Hub["id"], status: HubStatus) {
     setHubs((prev) => {
       const hub = prev.get(id);
       if (!hub) return prev;

@@ -1,13 +1,7 @@
-import { assertConnected } from "@/lib/device";
-import { encodeMessage } from "./message";
-import {
-  BuiltinProgramId,
-  createStartUserProgramCommand,
-  createStopUserProgramCommand,
-  createWriteStdinCommand,
-  pybricksControlCharacteristicUUID,
-  pybricksServiceUUID,
-} from "./protocol";
+import { assertConnected } from "@/lib/device/utils";
+import { encodeMessage } from "@/lib/message/encoding";
+import { pybricksControlCharacteristicUUID, pybricksServiceUUID } from "./constants";
+import { BuiltinProgramId, createStartUserProgramCommand, createStopUserProgramCommand, createWriteStdinCommand } from "./protocol";
 
 async function getPybricksService(device: BluetoothDevice) {
   assertConnected(device);

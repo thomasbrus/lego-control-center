@@ -1,6 +1,5 @@
 import { assert } from "@/lib/utils";
-
-type ConnectedBluetoothDevice = BluetoothDevice & { gatt: BluetoothRemoteGATTServer & { connected: true } };
+import { ConnectedBluetoothDevice } from "./types";
 
 export function assertConnected(device: BluetoothDevice): asserts device is ConnectedBluetoothDevice {
   assert(!!device.gatt?.connected, "Device is not connected");
