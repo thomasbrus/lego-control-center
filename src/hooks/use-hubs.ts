@@ -22,7 +22,7 @@ export function useHubs() {
 
   if (!value) throw new Error("HubsContext missing");
 
-  const { hubs, addHub, updateHubStatus } = value;
+  const { hubs, addHub, removeHub, updateHubStatus } = value;
 
   const requestAndConnect = useCallback(
     async (onNotification?: NotificationHandler) => {
@@ -35,7 +35,6 @@ export function useHubs() {
           name: device.name,
           device,
           status: ConnectionStatus.Connecting,
-          capabilities: { maxWriteSize: 0 },
         };
 
         addHub(hub);
@@ -47,7 +46,7 @@ export function useHubs() {
             await unsubscribe();
             unsubscribeRef.current.delete(device.id);
           }
-          updateHubStatus(device.id, ConnectionStatus.Disconnected);
+          removeHub(device.id);
         });
 
         await device.gatt?.connect();
@@ -85,7 +84,7 @@ export function useHubs() {
         // Update hub with final status and capabilities
         const connectedHub: Hub = {
           ...hub,
-          status: ConnectionStatus.Connected,
+          status: ConnectionStatus.Ready,
           capabilities,
         };
 
@@ -97,7 +96,7 @@ export function useHubs() {
         return null;
       }
     },
-    [addHub, updateHubStatus]
+    [addHub, removeHub, updateHubStatus]
   );
 
   return { hubs, requestAndConnect };

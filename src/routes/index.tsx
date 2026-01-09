@@ -58,9 +58,11 @@ export function Columns() {
 function HubColumn({ hub }: { hub: Hub }) {
   const [desiredState, setDesiredState] = useState<DesiredState>({ light: LightState.GREEN });
 
+  const isReady = hub.status === ConnectionStatus.Ready;
+
   const commitCallback = useCallback(
     async (state: DesiredState) => {
-      if (hub.status !== ConnectionStatus.Connected) return;
+      if (hub.status !== ConnectionStatus.Ready) return;
 
       if (state.light === LightState.OFF) {
         await writeStdinWithResponse(hub, `hub.light.off()\r\n`);
@@ -74,7 +76,7 @@ function HubColumn({ hub }: { hub: Hub }) {
   const { reconcileState } = useStateReconciler(commitCallback);
 
   useEffect(() => {
-    if (hub.status !== ConnectionStatus.Connected) return;
+    if (hub.status !== ConnectionStatus.Ready) return;
     reconcileState(desiredState);
   }, [JSON.stringify(desiredState), reconcileState, hub.status]);
 
@@ -86,7 +88,7 @@ function HubColumn({ hub }: { hub: Hub }) {
     <styled.div display="flex" flexDirection="column" gap="4">
       <DetailsCard hub={hub} />
       <MessagesCard />
-      <LightCard light={desiredState.light} setLight={setLight} />
+      <LightCard light={desiredState.light} setLight={setLight} disabled={!isReady} />
       <DesiredStateCard desiredState={desiredState} />
     </styled.div>
   );
@@ -117,8 +119,8 @@ function ConnectHubCard({ title, description }: { title?: string; description: s
 
 function getStatusBadge(status: ConnectionStatus) {
   switch (status) {
-    case ConnectionStatus.Connected:
-      return <Badge colorPalette="[success]">Connected</Badge>;
+    case ConnectionStatus.Ready:
+      return <Badge colorPalette="[success]">Ready</Badge>;
     case ConnectionStatus.Connecting:
       return <Badge colorPalette="[warning]">Connecting...</Badge>;
     case ConnectionStatus.RetrievingCapabilities:
@@ -159,7 +161,7 @@ function DetailsCard({ hub }: { hub: Hub }) {
           <Table.Body>
             <Table.Row>
               <Table.Cell>{getStatusBadge(hub.status)}</Table.Cell>
-              <Table.Cell>{hub.capabilities.maxWriteSize}</Table.Cell>
+              <Table.Cell>{hub.capabilities?.maxWriteSize ?? "—"}</Table.Cell>
             </Table.Row>
           </Table.Body>
         </Table.Root>
@@ -211,7 +213,7 @@ const lightChoices: { value: LightState; title: string }[] = [
   { value: LightState.YELLOW, title: "Yellow" },
 ];
 
-function LightCard({ light, setLight }: { light: LightState; setLight: (light: LightState) => void }) {
+function LightCard({ light, setLight, disabled }: { light: LightState; setLight: (light: LightState) => void; disabled?: boolean }) {
   function handleValueChange(details: RadioGroupValueChangeDetails) {
     setLight(details.value as LightState);
   }
@@ -242,7 +244,7 @@ function LightCard({ light, setLight }: { light: LightState; setLight: (light: L
         </Card.Title>
       </Card.Header>
       <Card.Body>
-        <RadioCardGroup.Root value={light} onValueChange={handleValueChange}>
+        <RadioCardGroup.Root value={light} onValueChange={handleValueChange} disabled={disabled}>
           <Grid gridTemplateColumns="1fr 1fr" gap="2">
             {lightChoices.map((item) => (
               <RadioCardGroup.Item

@@ -3,7 +3,7 @@ export enum ConnectionStatus {
   Connecting = "connecting",
   RetrievingCapabilities = "retrieving-capabilities",
   StartingRepl = "starting-repl",
-  Connected = "connected",
+  Ready = "ready",
   Disconnected = "disconnected",
   Error = "error",
 }
