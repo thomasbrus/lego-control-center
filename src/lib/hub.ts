@@ -1,9 +1,11 @@
+import { ConnectionStatus } from "@/lib/connection-status";
 import { createWriteStdinCommands, stopUserProgram, writeCommandsWithResponse } from "./pybricks";
 
 export interface Hub {
   id: BluetoothDevice["id"];
   name: BluetoothDevice["name"];
   device: BluetoothDevice;
+  status: ConnectionStatus;
   // See HubCapabilityFlag for capability definitions
   capabilities: { maxWriteSize: number };
 }

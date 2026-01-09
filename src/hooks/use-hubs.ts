@@ -1,8 +1,12 @@
 import { HubsContext } from "@/contexts/hubs";
+import { ConnectionStatus } from "@/lib/connection-status";
 import { assertConnected } from "@/lib/device";
+import { Hub } from "@/lib/hub";
 import { pybricksHubCapabilitiesCharacteristicUUID, pybricksServiceUUID } from "@/lib/protocol";
 import { getPybricksControlCharacteristic, startReplUserProgram } from "@/lib/pybricks";
-import { useCallback, useContext, useRef, useState } from "react";
+import { useCallback, useContext, useRef } from "react";
+
+export { ConnectionStatus } from "@/lib/connection-status";
 
 const requestDeviceOptions = {
   filters: [{ services: [pybricksServiceUUID] }],
@@ -12,23 +16,29 @@ const requestDeviceOptions = {
 export type NotificationHandler = (value: DataView) => void;
 
 export function useHubs() {
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
   const unsubscribeRef = useRef<Map<string, () => Promise<void>>>(new Map());
 
   const value = useContext(HubsContext);
 
   if (!value) throw new Error("HubsContext missing");
 
-  const { hubs, addHub, removeHub } = value;
+  const { hubs, addHub, updateHubStatus } = value;
 
   const requestAndConnect = useCallback(
     async (onNotification?: NotificationHandler) => {
-      setIsConnecting(true);
-      setError(null);
-
       try {
         const device = await navigator.bluetooth.requestDevice(requestDeviceOptions);
+
+        // Create hub early with Connecting status
+        const hub: Hub = {
+          id: device.id,
+          name: device.name,
+          device,
+          status: ConnectionStatus.Connecting,
+          capabilities: { maxWriteSize: 0 },
+        };
+
+        addHub(hub);
 
         device.addEventListener("gattserverdisconnected", async () => {
           // Clean up notifications on disconnect
@@ -37,11 +47,13 @@ export function useHubs() {
             await unsubscribe();
             unsubscribeRef.current.delete(device.id);
           }
-          removeHub(device.id);
+          updateHubStatus(device.id, ConnectionStatus.Disconnected);
         });
 
         await device.gatt?.connect();
+        updateHubStatus(device.id, ConnectionStatus.RetrievingCapabilities);
         const capabilities = await getCapabilities(device);
+        updateHubStatus(device.id, ConnectionStatus.StartingRepl);
         await startReplUserProgram(device);
 
         // Set up notifications if handler is provided
@@ -70,27 +82,25 @@ export function useHubs() {
           unsubscribeRef.current.set(device.id, unsubscribe);
         }
 
-        const hub = {
-          id: device.id,
-          name: device.name,
-          device,
+        // Update hub with final status and capabilities
+        const connectedHub: Hub = {
+          ...hub,
+          status: ConnectionStatus.Connected,
           capabilities,
         };
 
-        addHub(hub);
+        addHub(connectedHub);
 
-        return hub;
+        return connectedHub;
       } catch (e) {
-        setError(e instanceof Error ? e : new Error(String(e)));
+        // User cancelled the device picker - not an error
         return null;
-      } finally {
-        setIsConnecting(false);
       }
     },
-    [addHub, removeHub]
+    [addHub, updateHubStatus]
   );
 
-  return { hubs, requestAndConnect, isConnecting, error };
+  return { hubs, requestAndConnect };
 }
 
 async function getCapabilities(device: BluetoothDevice) {

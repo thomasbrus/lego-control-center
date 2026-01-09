@@ -1,7 +1,6 @@
 import { Badge, Button, Card, Group, Heading, Icon, RadioCardGroup, Table, Text } from "@/components/ui";
-import { ErrorAlert } from "@/components/ui/error-alert";
 import { HubsProvider } from "@/contexts/hubs";
-import { useHubs } from "@/hooks/use-hubs";
+import { ConnectionStatus, useHubs } from "@/hooks/use-hubs";
 import { useStateReconciler } from "@/hooks/use-state-reconciler";
 import { DesiredState, LightState } from "@/lib/desired-state";
 import { disconnect, Hub, shutdown, writeStdinWithResponse } from "@/lib/hub";
@@ -61,6 +60,8 @@ function HubColumn({ hub }: { hub: Hub }) {
 
   const commitCallback = useCallback(
     async (state: DesiredState) => {
+      if (hub.status !== ConnectionStatus.Connected) return;
+
       if (state.light === LightState.OFF) {
         await writeStdinWithResponse(hub, `hub.light.off()\r\n`);
       } else {
@@ -73,8 +74,9 @@ function HubColumn({ hub }: { hub: Hub }) {
   const { reconcileState } = useStateReconciler(commitCallback);
 
   useEffect(() => {
+    if (hub.status !== ConnectionStatus.Connected) return;
     reconcileState(desiredState);
-  }, [JSON.stringify(desiredState), reconcileState]);
+  }, [JSON.stringify(desiredState), reconcileState, hub.status]);
 
   function setLight(light: LightState) {
     setDesiredState((prev) => ({ ...prev, light }));
@@ -91,7 +93,7 @@ function HubColumn({ hub }: { hub: Hub }) {
 }
 
 function ConnectHubCard({ title, description }: { title?: string; description: string }) {
-  const { requestAndConnect, isConnecting, error } = useHubs();
+  const { requestAndConnect } = useHubs();
 
   function handleNotification(data: DataView) {
     console.debug("Notification received:", data);
@@ -103,15 +105,33 @@ function ConnectHubCard({ title, description }: { title?: string; description: s
         <styled.div textAlign="center">
           <Heading>{title}</Heading>
           <Text color="fg.muted">{description}</Text>
-          <Button colorPalette="[primary]" mt="4" loading={isConnecting} onClick={() => requestAndConnect(handleNotification)}>
+          <Button colorPalette="[primary]" mt="4" onClick={() => requestAndConnect(handleNotification)}>
             <BluetoothIcon />
             Connect
           </Button>
         </styled.div>
       </Box>
-      {error && <ErrorAlert description={error.message} />}
     </Card.Root>
   );
+}
+
+function getStatusBadge(status: ConnectionStatus) {
+  switch (status) {
+    case ConnectionStatus.Connected:
+      return <Badge colorPalette="[success]">Connected</Badge>;
+    case ConnectionStatus.Connecting:
+      return <Badge colorPalette="[warning]">Connecting...</Badge>;
+    case ConnectionStatus.RetrievingCapabilities:
+      return <Badge colorPalette="[warning]">Retrieving capabilities...</Badge>;
+    case ConnectionStatus.StartingRepl:
+      return <Badge colorPalette="[warning]">Starting REPL...</Badge>;
+    case ConnectionStatus.Disconnected:
+      return <Badge colorPalette="[danger]">Disconnected</Badge>;
+    case ConnectionStatus.Error:
+      return <Badge colorPalette="[danger]">Error</Badge>;
+    default:
+      return <Badge>Unknown</Badge>;
+  }
 }
 
 function DetailsCard({ hub }: { hub: Hub }) {
@@ -138,9 +158,7 @@ function DetailsCard({ hub }: { hub: Hub }) {
           </Table.Head>
           <Table.Body>
             <Table.Row>
-              <Table.Cell>
-                <Badge colorPalette="[success]">Connected</Badge>
-              </Table.Cell>
+              <Table.Cell>{getStatusBadge(hub.status)}</Table.Cell>
               <Table.Cell>{hub.capabilities.maxWriteSize}</Table.Cell>
             </Table.Row>
           </Table.Body>

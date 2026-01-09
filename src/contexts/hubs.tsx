@@ -1,3 +1,4 @@
+import { ConnectionStatus } from "@/lib/connection-status";
 import { Hub } from "@/lib/hub";
 import { createContext, useState } from "react";
 
@@ -5,6 +6,7 @@ interface HubsContextValue {
   hubs: Hub[];
   addHub: (hub: Hub) => void;
   removeHub: (id: Hub["id"]) => void;
+  updateHubStatus: (id: Hub["id"], status: ConnectionStatus) => void;
 }
 
 export const HubsContext = createContext<HubsContextValue | undefined>(undefined);
@@ -20,7 +22,17 @@ export function HubsProvider({ children }: { children: React.ReactNode }) {
     setHubs((prev) => mapWithoutKey(prev, id));
   }
 
-  return <HubsContext.Provider value={{ hubs: Array.from(hubs.values()), addHub, removeHub }}>{children}</HubsContext.Provider>;
+  function updateHubStatus(id: Hub["id"], status: ConnectionStatus) {
+    setHubs((prev) => {
+      const hub = prev.get(id);
+      if (!hub) return prev;
+      return mapWithKey(prev, id, { ...hub, status });
+    });
+  }
+
+  return (
+    <HubsContext.Provider value={{ hubs: Array.from(hubs.values()), addHub, removeHub, updateHubStatus }}>{children}</HubsContext.Provider>
+  );
 }
 
 function mapWithKey<K, V>(map: Map<K, V>, key: K, value: V): Map<K, V> {
