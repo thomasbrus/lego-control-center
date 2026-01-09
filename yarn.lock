@@ -1150,14 +1150,6 @@
   resolved "https://registry.yarnpkg.com/@tanstack/pacer-lite/-/pacer-lite-0.1.1.tgz#431d3b0ac871280e8326fdbf156bb171d9bb0aa3"
   integrity sha512-y/xtNPNt/YeyoVxE/JCx+T7yjEzpezmbb+toK8DDD1P4m7Kzs5YR956+7OKexG3f8aXgC3rLZl7b1V+yNUSy5w==
 
-"@tanstack/pacer@0.17.1":
-  version "0.17.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/pacer/-/pacer-0.17.1.tgz#71649903c55f32db4dd927b3d75737355cb018e4"
-  integrity sha512-52GytGu07L73lNCWB1N02NWBp/tzK2jZ20U8sFInXyiq2KHtHxbXaN1Qw/MR1REqFIKgEy5DOBNZRjuSy5zaRg==
-  dependencies:
-    "@tanstack/devtools-event-client" "^0.4.0"
-    "@tanstack/store" "^0.8.0"
-
 "@tanstack/query-core@5.90.16":
   version "5.90.16"
   resolved "https://registry.yarnpkg.com/@tanstack/query-core/-/query-core-5.90.16.tgz#19a972c2ffbc47727ab6649028af1bee70e28cdf"
@@ -1169,14 +1161,6 @@
   integrity sha512-xTg4qrUY0fuLaSnkATLZcK3BWlnwLp7IuAb6UTbZKngiDEvvDCNTvVvHgPlgef1O2qN4klZxInRyRY6oEkXZ2A==
   dependencies:
     "@tanstack/form-core" "1.27.7"
-    "@tanstack/react-store" "^0.8.0"
-
-"@tanstack/react-pacer@^0.19.1":
-  version "0.19.1"
-  resolved "https://registry.yarnpkg.com/@tanstack/react-pacer/-/react-pacer-0.19.1.tgz#6e6c45b78a10e6c2adf28b47595fca6d76e8f823"
-  integrity sha512-wfGwKLo2gosKr5tsXico+jWJ8LsWsBC8MA1HVtUY/D6dhFduEVizKxRUcvP60I3dRvnoXDbN202g4feJHlivnA==
-  dependencies:
-    "@tanstack/pacer" "0.17.1"
     "@tanstack/react-store" "^0.8.0"
 
 "@tanstack/react-query@^5.66.5":
