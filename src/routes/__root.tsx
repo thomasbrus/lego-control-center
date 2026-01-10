@@ -1,7 +1,8 @@
-import { Card, Heading } from "@/components/ui";
+import { Badge, Card, Heading } from "@/components/ui";
 import type { QueryClient } from "@tanstack/react-query";
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import { styled } from "styled-system/jsx";
+import z from "zod";
 import appCss from "../styles/index.css?url";
 
 interface MyRouterContext {
@@ -29,16 +30,37 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
     ],
   }),
+  validateSearch: z.object({
+    testing: z.boolean().optional().catch(false),
+  }),
   component: RootComponent,
   shellComponent: RootDocument,
   notFoundComponent: NotFoundPage,
 });
 
 function RootComponent() {
+  const { testing } = Route.useSearch();
+
   return (
     <styled.div mx="auto" bg="gray.2" minH="dvh" display="grid" gridTemplateRows="auto 1fr">
-      <styled.header bg="gray.surface.bg" p="8" borderBottomWidth="1" borderColor="border" pos="sticky" top="0" zIndex="docked">
+      <styled.header
+        bg="gray.surface.bg"
+        p="8"
+        borderBottomWidth="1"
+        borderColor="border"
+        pos="sticky"
+        top="0"
+        zIndex="docked"
+        display="flex"
+        alignItems="center"
+        gap="3"
+      >
         <Heading>LEGO Control Center</Heading>
+        {testing && (
+          <Badge size="lg" colorPalette="[green]">
+            Testing Mode
+          </Badge>
+        )}
       </styled.header>
 
       <Outlet />

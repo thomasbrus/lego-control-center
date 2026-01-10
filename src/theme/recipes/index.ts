@@ -1,3 +1,4 @@
+import { scrollArea } from "./scroll-area";
 import { radioCardGroup } from "./radio-card-group";
 import { icon } from "./icon";
 import { menu } from "./menu";
@@ -24,6 +25,7 @@ export const recipes = {
   badge,
   menu,
   icon,
-  radioCardGroup
+  radioCardGroup,
+  scrollArea
 }
 export const slotRecipes = {}

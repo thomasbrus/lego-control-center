@@ -1,3 +1,5 @@
+import { Event } from "@/lib/event/types";
+
 export enum HubStatus {
   Idle = "idle",
   Connecting = "connecting",
@@ -24,3 +26,5 @@ export type ReadyHub = Hub & {
   status: HubStatus.Ready;
   capabilities: HubCapabilities;
 };
+
+export type EventHandler = (event: Event) => void;

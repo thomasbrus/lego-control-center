@@ -1,134 +1,167 @@
-import { assertConnected } from "@/lib/device/utils";
+import { parseEvent } from "@/lib/event/parsing";
 import { disconnect, shutdown } from "@/lib/hub/actions";
 import { HubsContext } from "@/lib/hub/context";
-import { Hub, HubStatus } from "@/lib/hub/types";
+import { EventHandler, Hub, HubStatus } from "@/lib/hub/types";
 import { getPybricksControlCharacteristic, startReplUserProgram } from "@/lib/pybricks/commands";
-import { pybricksHubCapabilitiesCharacteristicUUID, pybricksServiceUUID } from "@/lib/pybricks/constants";
-import { useCallback, useContext, useRef } from "react";
-
-const requestDeviceOptions = {
-  filters: [{ services: [pybricksServiceUUID] }],
-  optionalServices: [pybricksServiceUUID],
-};
-
-export type NotificationHandler = (value: DataView) => void;
+import { requestDeviceOptions } from "@/lib/pybricks/constants";
+import { useCallback, useContext, useEffect, useRef } from "react";
+import { getCapabilities } from "../device/utils";
 
 export function useHubs() {
-  const unsubscribeRef = useRef<Map<string, () => Promise<void>>>(new Map());
+  const { hubIds, addHub, removeHub, updateHubStatus } = useHubsContext();
 
-  const value = useContext(HubsContext);
+  const connect = useCallback(async () => {
+    try {
+      const device = await navigator.bluetooth.requestDevice(requestDeviceOptions);
+      const hub: Hub = { id: device.id, name: device.name, device, status: HubStatus.Connecting };
 
-  if (!value) throw new Error("HubsContext missing");
+      addHub(hub);
 
-  const { hubs, addHub, removeHub, updateHubStatus } = value;
+      device.addEventListener("gattserverdisconnected", () => {
+        removeHub(device.id);
+      });
 
-  const requestAndConnect = useCallback(
-    async (onNotification?: NotificationHandler) => {
-      try {
-        const device = await navigator.bluetooth.requestDevice(requestDeviceOptions);
+      await device.gatt?.connect();
+      updateHubStatus(device.id, HubStatus.RetrievingCapabilities);
 
-        // Create hub early with Connecting status
-        const hub: Hub = {
-          id: device.id,
-          name: device.name,
-          device,
-          status: HubStatus.Connecting,
-        };
+      const capabilities = await getCapabilities(device);
+      updateHubStatus(device.id, HubStatus.StartingRepl);
 
-        addHub(hub);
+      await startReplUserProgram(device);
+      const connectedHub: Hub = { ...hub, status: HubStatus.Ready, capabilities };
 
-        device.addEventListener("gattserverdisconnected", async () => {
-          // Clean up notifications on disconnect
-          const unsubscribe = unsubscribeRef.current.get(device.id);
-          if (unsubscribe) {
-            await unsubscribe();
-            unsubscribeRef.current.delete(device.id);
-          }
-          removeHub(device.id);
-        });
+      return connectedHub;
+    } catch (e) {
+      // User cancelled the device picker - not an error
+      if (e instanceof DOMException && e.name === "NotFoundError") return;
+      throw e;
+    }
+  }, [addHub, removeHub, updateHubStatus]);
 
-        await device.gatt?.connect();
-        updateHubStatus(device.id, HubStatus.RetrievingCapabilities);
-        const capabilities = await getCapabilities(device);
-        updateHubStatus(device.id, HubStatus.StartingRepl);
-        await startReplUserProgram(device);
-
-        // Set up notifications if handler is provided
-        if (onNotification) {
-          const controlCharacteristic = await getPybricksControlCharacteristic(device);
-
-          const listener = (event: Event) => {
-            const target = event.target as BluetoothRemoteGATTCharacteristic;
-            if (target.value) {
-              onNotification(target.value);
-            }
-          };
-
-          controlCharacteristic.addEventListener("characteristicvaluechanged", listener);
-          await controlCharacteristic.startNotifications();
-
-          const unsubscribe = async () => {
-            controlCharacteristic.removeEventListener("characteristicvaluechanged", listener);
-            try {
-              await controlCharacteristic.stopNotifications();
-            } catch {
-              // Ignore errors - device is likely already disconnected
-            }
-          };
-
-          unsubscribeRef.current.set(device.id, unsubscribe);
-        }
-
-        // Update hub with final status and capabilities
-        const connectedHub: Hub = {
-          ...hub,
-          status: HubStatus.Ready,
-          capabilities,
-        };
-
-        addHub(connectedHub);
-
-        return connectedHub;
-      } catch (e) {
-        // User cancelled the device picker - not an error
-        return null;
-      }
-    },
-    [addHub, removeHub, updateHubStatus]
-  );
-
-  const disconnectHub = useCallback(
-    async (hub: Hub) => {
-      removeHub(hub.id);
-      await disconnect(hub);
-    },
-    [removeHub]
-  );
-
-  const shutdownHub = useCallback(
-    async (hub: Hub) => {
-      removeHub(hub.id);
-      await shutdown(hub);
-    },
-    [removeHub]
-  );
-
-  return { hubs, requestAndConnect, disconnectHub, shutdownHub };
+  return { hubIds, connect };
 }
 
-async function getCapabilities(device: BluetoothDevice) {
-  assertConnected(device);
+export function useVirtualHubs(): ReturnType<typeof useHubs> {
+  const { hubIds, addHub } = useHubsContext();
 
-  try {
-    const primaryService = await device.gatt.getPrimaryService(pybricksServiceUUID);
-    const characteristic = await primaryService.getCharacteristic(pybricksHubCapabilitiesCharacteristicUUID);
+  const connect = useCallback(async () => {
+    const id = `virtual-hub-${crypto.randomUUID()}`;
+    const hub: Hub = {
+      id,
+      name: "Virtual Hub",
+      device: {} as BluetoothDevice,
+      status: HubStatus.Ready,
+      capabilities: {
+        maxWriteSize: 24,
+      },
+    };
+    addHub(hub);
+    return hub;
+  }, [addHub]);
 
-    const value = await characteristic.readValue();
+  return { hubIds, connect };
+}
 
-    const maxWriteSize = value.getUint16(0, true);
+export function useHub(id: Hub["id"], options?: { onEvent?: EventHandler }) {
+  const { onEvent } = options ?? {};
+  const { getHub } = useHubsContext();
 
-    return { maxWriteSize };
-  } catch (err) {
-    throw new Error("Failed to get capabilities", { cause: err });
+  const hub = getHub(id);
+  const unsubscribeRef = useRef<null | (() => Promise<void>)>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function setupNotifications() {
+      if (!hub || hub.status !== HubStatus.Ready || !onEvent) return;
+
+      try {
+        const controlCharacteristic = await getPybricksControlCharacteristic(hub.device);
+
+        const listener = (domEvent: globalThis.Event) => {
+          const target = domEvent.target as BluetoothRemoteGATTCharacteristic;
+          if (!target.value) return;
+
+          const event = parseEvent(target.value);
+          if (event) onEvent(event);
+        };
+
+        controlCharacteristic.addEventListener("characteristicvaluechanged", listener);
+        await controlCharacteristic.startNotifications();
+
+        const unsubscribe = async () => {
+          controlCharacteristic.removeEventListener("characteristicvaluechanged", listener);
+          try {
+            await controlCharacteristic.stopNotifications();
+          } catch {
+            // Ignore errors - device is likely already disconnected
+          }
+        };
+
+        if (active) {
+          unsubscribeRef.current = unsubscribe;
+        } else {
+          await unsubscribe();
+        }
+      } catch {
+        // Swallow errors for notification setup; hub may disconnect quickly
+      }
+    }
+
+    setupNotifications();
+
+    return () => {
+      active = false;
+      const unsubscribe = unsubscribeRef.current;
+      unsubscribeRef.current = null;
+      if (unsubscribe) void unsubscribe();
+    };
+  }, [hub?.id, hub?.status, onEvent]);
+
+  return { hub } as const;
+}
+
+export function useVirtualHub(id: Hub["id"], _options?: { onEvent?: EventHandler }): ReturnType<typeof useHub> {
+  const { getHub } = useHubsContext();
+  const hub = getHub(id);
+
+  return { hub } as const;
+}
+
+export function useHubActions(id: Hub["id"]) {
+  const { getHub, removeHub } = useHubsContext();
+
+  const disconnectHub = useCallback(async () => {
+    const hub = getHub(id);
+    await disconnect(hub);
+    removeHub(id);
+  }, [id, getHub, removeHub]);
+
+  const shutdownHub = useCallback(async () => {
+    const hub = getHub(id);
+    await shutdown(hub);
+    removeHub(id);
+  }, [id, getHub, removeHub]);
+
+  return { disconnectHub, shutdownHub };
+}
+
+export function useVirtualHubActions(id: Hub["id"]): ReturnType<typeof useHubActions> {
+  async function disconnectHub() {
+    console.log(`Virtual hub ${id} disconnected`);
+    return new Promise<void>((resolve) => setTimeout(resolve, 100));
   }
+
+  async function shutdownHub() {
+    console.log(`Virtual hub ${id} shutdown`);
+    return new Promise<void>((resolve) => setTimeout(resolve, 100));
+  }
+
+  return { disconnectHub, shutdownHub } as const;
+}
+
+function useHubsContext() {
+  const value = useContext(HubsContext);
+  if (!value) throw new Error("HubsContext missing");
+  return value;
 }

@@ -2,7 +2,8 @@ import { Hub, HubStatus } from "@/lib/hub/types";
 import { createContext, useState } from "react";
 
 interface HubsContextValue {
-  hubs: Hub[];
+  hubIds: Hub["id"][];
+  getHub: (id: Hub["id"]) => Hub;
   addHub: (hub: Hub) => void;
   removeHub: (id: Hub["id"]) => void;
   updateHubStatus: (id: Hub["id"], status: HubStatus) => void;
@@ -12,6 +13,12 @@ export const HubsContext = createContext<HubsContextValue | undefined>(undefined
 
 export function HubsProvider({ children }: { children: React.ReactNode }) {
   const [hubs, setHubs] = useState<Map<Hub["id"], Hub>>(new Map());
+
+  function getHub(id: Hub["id"]): Hub {
+    const hub = hubs.get(id);
+    if (!hub) throw new Error(`Hub not found: ${id}`);
+    return hub;
+  }
 
   function addHub(hub: Hub) {
     setHubs((prev) => mapWithKey(prev, hub.id, hub));
@@ -30,7 +37,9 @@ export function HubsProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <HubsContext.Provider value={{ hubs: Array.from(hubs.values()), addHub, removeHub, updateHubStatus }}>{children}</HubsContext.Provider>
+    <HubsContext.Provider value={{ hubIds: Array.from(hubs.keys()), getHub, addHub, removeHub, updateHubStatus }}>
+      {children}
+    </HubsContext.Provider>
   );
 }
 

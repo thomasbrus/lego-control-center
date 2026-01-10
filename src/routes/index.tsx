@@ -1,18 +1,26 @@
 import { Badge, Button, Card, Group, Heading, Icon, RadioCardGroup, Table, Text } from "@/components/ui";
 import { useDesiredState } from "@/lib/desired-state/hooks";
 import { DesiredState, LightState } from "@/lib/desired-state/types";
+import { Event } from "@/lib/event/types";
 import { writeStdinWithResponse } from "@/lib/hub/actions";
 import { HubsProvider } from "@/lib/hub/context";
-import { useHubs } from "@/lib/hub/hooks";
+import { useHub, useHubActions, useHubs, useVirtualHub, useVirtualHubActions, useVirtualHubs } from "@/lib/hub/hooks";
 import { Hub, HubStatus } from "@/lib/hub/types";
+import { EventType } from "@/lib/pybricks/protocol";
 import { RadioGroupValueChangeDetails } from "@ark-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BluetoothIcon, BracesIcon, LightbulbIcon } from "lucide-react";
+import { BluetoothIcon, BracesIcon, LightbulbIcon, RadioIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { css } from "styled-system/css";
 import { Box, Grid, styled } from "styled-system/jsx";
+import z from "zod";
 
-export const Route = createFileRoute("/")({ component: RouteComponent });
+export const Route = createFileRoute("/")({
+  validateSearch: z.object({
+    testing: z.boolean().optional().catch(false),
+  }),
+  component: RouteComponent,
+});
 
 function RouteComponent() {
   return (
@@ -23,14 +31,13 @@ function RouteComponent() {
 }
 
 export function Columns() {
-  const { hubs } = useHubs();
-
-  // const hubs: Hub[] = [{ id: crypto.randomUUID(), name: "Technic Hub B", device: null as any, capabilities: { maxWriteSize: 24 } }];
+  const { testing } = Route.useSearch();
+  const { hubIds } = testing ? useVirtualHubs() : useHubs();
 
   let columnBefore = null;
   let columnAfter = null;
 
-  if (hubs.length === 0) {
+  if (hubIds.length === 0) {
     columnBefore = (
       <div>
         <ConnectHubCard title="No hub connected" description="Let's connect a hub to get started." />
@@ -47,8 +54,8 @@ export function Columns() {
   return (
     <styled.main p="8" display="grid" gridTemplateColumns={{ md: "1fr 1fr", lg: "1fr 1fr 1fr" }} gap="6">
       {columnBefore}
-      {hubs.map((hub) => (
-        <HubColumn key={hub.id} hub={hub} />
+      {hubIds.map((hubId) => (
+        <HubColumn key={hubId} hubId={hubId} />
       ))}
 
       {columnAfter}
@@ -56,8 +63,19 @@ export function Columns() {
   );
 }
 
-function HubColumn({ hub }: { hub: Hub }) {
+function HubColumn({ hubId }: { hubId: Hub["id"] }) {
   const [desiredState, setDesiredState] = useState<DesiredState>({ light: LightState.GREEN });
+  const [events, setEvents] = useState<Event[]>([]);
+
+  const handleEvent = useCallback((event: Event) => {
+    setEvents((prev) => [...prev.slice(-49), event]); // Keep last 50
+    console.debug("Event received:", event);
+  }, []);
+
+  const { testing } = Route.useSearch();
+
+  const { hub } = testing ? useVirtualHub(hubId, { onEvent: handleEvent }) : useHub(hubId, { onEvent: handleEvent });
+  const { disconnectHub, shutdownHub } = testing ? useVirtualHubActions(hubId) : useHubActions(hubId);
 
   const isReady = hub.status === HubStatus.Ready;
 
@@ -87,8 +105,8 @@ function HubColumn({ hub }: { hub: Hub }) {
 
   return (
     <styled.div display="flex" flexDirection="column" gap="4">
-      <DetailsCard hub={hub} />
-      <MessagesCard />
+      <DetailsCard hub={hub} disconnectHub={disconnectHub} shutdownHub={shutdownHub} />
+      <EventsCard events={events} />
       <LightCard light={desiredState.light} setLight={setLight} disabled={!isReady} />
       <DesiredStateCard desiredState={desiredState} />
     </styled.div>
@@ -96,11 +114,8 @@ function HubColumn({ hub }: { hub: Hub }) {
 }
 
 function ConnectHubCard({ title, description }: { title?: string; description: string }) {
-  const { requestAndConnect } = useHubs();
-
-  function handleNotification(data: DataView) {
-    console.debug("Notification received:", data);
-  }
+  const { testing } = Route.useSearch();
+  const { connect } = testing ? useVirtualHubs() : useHubs();
 
   return (
     <Card.Root p="6" gap="4">
@@ -108,7 +123,7 @@ function ConnectHubCard({ title, description }: { title?: string; description: s
         <styled.div textAlign="center">
           <Heading>{title}</Heading>
           <Text color="fg.muted">{description}</Text>
-          <Button colorPalette="[primary]" mt="4" onClick={() => requestAndConnect(handleNotification)}>
+          <Button colorPalette="[primary]" mt="4" onClick={() => connect()}>
             <BluetoothIcon />
             Connect
           </Button>
@@ -137,9 +152,15 @@ function getStatusBadge(status: HubStatus) {
   }
 }
 
-function DetailsCard({ hub }: { hub: Hub }) {
-  const { shutdownHub, disconnectHub } = useHubs();
-
+function DetailsCard({
+  hub,
+  disconnectHub,
+  shutdownHub,
+}: {
+  hub: Hub;
+  disconnectHub: () => Promise<void>;
+  shutdownHub: () => Promise<void>;
+}) {
   const isReady = hub.status === HubStatus.Ready;
 
   return (
@@ -147,10 +168,10 @@ function DetailsCard({ hub }: { hub: Hub }) {
       <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
         <Card.Title>{hub.name}</Card.Title>
         <Group attached>
-          <Button size="xs" variant="surface" colorPalette="[danger]" onClick={() => shutdownHub(hub)} disabled={!isReady}>
+          <Button size="xs" variant="surface" colorPalette="[danger]" onClick={shutdownHub} disabled={!isReady}>
             Shutdown
           </Button>
-          <Button size="xs" variant="surface" onClick={() => disconnectHub(hub)}>
+          <Button size="xs" variant="surface" onClick={disconnectHub}>
             Disconnect
           </Button>
         </Group>
@@ -195,17 +216,65 @@ function DesiredStateCard({ desiredState }: { desiredState: DesiredState }) {
   );
 }
 
-function MessagesCard() {
+function EventsCard({ events }: { events: Event[] }) {
+  function getEventTypeName(type: EventType): string {
+    switch (type) {
+      case EventType.StatusReport:
+        return "StatusReport";
+      case EventType.WriteStdout:
+        return "WriteStdout";
+      case EventType.WriteAppData:
+        return "WriteAppData";
+      default:
+        return "Unknown";
+    }
+  }
+
+  function getEventAttributes(event: Event): string {
+    const { type, ...rest } = event;
+    return JSON.stringify(rest);
+  }
+
   return (
     <Card.Root>
       <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
         <Card.Title display="flex" alignItems="center" gap="2">
           <Icon size="md">
-            <LightbulbIcon />
+            <RadioIcon />
           </Icon>
-          Messages
+          Events ({events.length})
         </Card.Title>
       </Card.Header>
+      <Card.Body maxH="48" overflow="auto">
+        {events.length === 0 ? (
+          <Text color="fg.muted" fontSize="sm">
+            No events yet
+          </Text>
+        ) : (
+          <Table.Root variant="plain">
+            <Table.Head>
+              <Table.Row>
+                <Table.Header>Type</Table.Header>
+                <Table.Header>Attributes</Table.Header>
+              </Table.Row>
+            </Table.Head>
+            <Table.Body>
+              {events.map((event, i) => (
+                <Table.Row key={i}>
+                  <Table.Cell>
+                    <Badge size="sm">{getEventTypeName(event.type)}</Badge>
+                  </Table.Cell>
+                  <Table.Cell>
+                    <styled.code fontSize="xs" wordBreak="break-all">
+                      {getEventAttributes(event)}
+                    </styled.code>
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table.Root>
+        )}
+      </Card.Body>
     </Card.Root>
   );
 }
