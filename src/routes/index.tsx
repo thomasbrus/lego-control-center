@@ -2,7 +2,6 @@ import { Badge, Button, Card, Group, Heading, Icon, RadioCardGroup, ScrollArea, 
 import { useDesiredState } from "@/lib/desired-state/hooks";
 import { DesiredState, LightState } from "@/lib/desired-state/types";
 import { AnyEvent } from "@/lib/events/types";
-import { getEventTypeName } from "@/lib/events/utils";
 import { writeStdinWithResponse } from "@/lib/hubs/actions";
 import { HubsProvider } from "@/lib/hubs/context";
 import { useHub, useHubActions, useHubs, useVirtualHub, useVirtualHubActions, useVirtualHubs } from "@/lib/hubs/hooks";
@@ -241,19 +240,21 @@ function DesiredStateCard({ desiredState }: { desiredState: DesiredState }) {
 }
 
 function EventsCard({ events }: { events: AnyEvent[] }) {
-  const [eventType, setEventType] = useState<"all" | "status" | "stdout">("stdout");
+  const [eventType, setEventType] = useState<"status" | "stdout">("stdout");
 
   const eventTypes = {
-    all: (_event: AnyEvent) => true,
     status: (event: AnyEvent) => event.type === EventType.StatusReport,
     stdout: (event: AnyEvent) => event.type === EventType.WriteStdout,
   };
 
-  const filteredEvents = events.filter((event) => {
+  const tableEvents = [...events].reverse().filter((event) => {
     return eventTypes[eventType](event);
   });
 
-  const items = Object.keys(eventTypes).map((key) => ({ value: key, label: key.charAt(0).toUpperCase() + key.slice(1) }));
+  const items = [
+    { label: "Status Report", value: "status" },
+    { label: "Write Stdout", value: "stdout" },
+  ];
 
   return (
     <Card.Root>
@@ -270,7 +271,7 @@ function EventsCard({ events }: { events: AnyEvent[] }) {
           <SegmentGroup.Indicator />
           <SegmentGroup.Items items={items} />
         </SegmentGroup.Root>
-        {filteredEvents.length === 0 ? <EmptyState description="No events yet." /> : <EventsTable events={filteredEvents} />}
+        {tableEvents.length === 0 ? <EmptyState description="No events yet." /> : <EventsTable events={tableEvents} />}
       </Card.Body>
     </Card.Root>
   );
@@ -283,7 +284,7 @@ function EventsTable({ events }: { events: AnyEvent[] }) {
         <Table.Head>
           <Table.Row>
             <Table.Header position="sticky" top="0" zIndex="docked">
-              Type
+              Timestamp
             </Table.Header>
             <Table.Header position="sticky" top="0" zIndex="docked">
               Attributes
@@ -301,16 +302,20 @@ function EventsTable({ events }: { events: AnyEvent[] }) {
 }
 
 function getEventAttributes(event: AnyEvent): string {
-  const { type, ...rest } = event;
+  const { type, receivedAt, ...rest } = event;
   return JSON.stringify(rest);
 }
 
 function EventsTableRow({ event }: { event: AnyEvent }) {
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
   return (
     <Table.Row verticalAlign="top">
-      <Table.Cell>
-        <Badge size="sm">{getEventTypeName(event.type)}</Badge>
-      </Table.Cell>
+      <Table.Cell>{formatter.format(event.receivedAt)}</Table.Cell>
       <Table.Cell>
         <styled.code fontSize="xs" whiteSpace="pre-wrap">
           {getEventAttributes(event)}

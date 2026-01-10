@@ -33,6 +33,8 @@ export function useHubs() {
       await startReplUserProgram(device);
       const connectedHub: Hub = { ...hub, status: HubStatus.Ready, capabilities };
 
+      addHub(connectedHub);
+
       return connectedHub;
     } catch (e) {
       // User cancelled the device picker - not an error
@@ -95,7 +97,7 @@ export function useHub(id: Hub["id"], options?: { onEvent?: EventHandler }) {
           const target = domEvent.target as BluetoothRemoteGATTCharacteristic;
           if (!target.value) return;
 
-          const event = parseNotification(target.value);
+          const event = parseNotification(target.value, new Date());
           if (event) onEvent(event);
         };
 
@@ -152,6 +154,7 @@ export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler 
         flags: 0,
         runningProgId: 0,
         selectedSlot: 0,
+        receivedAt: new Date(),
       };
 
       onEvent(statusEvent1);
@@ -161,6 +164,7 @@ export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler 
       const stdoutEvent1: WriteStdoutEvent = {
         type: EventType.WriteStdout,
         message: "Virtual Hub initialized\r\n",
+        receivedAt: new Date(),
       };
 
       onEvent(stdoutEvent1);
@@ -172,6 +176,7 @@ export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler 
         flags: 1,
         runningProgId: 1,
         selectedSlot: 0,
+        receivedAt: new Date(),
       };
 
       onEvent(statusEvent2);
@@ -181,6 +186,7 @@ export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler 
       const stdoutEvent2: WriteStdoutEvent = {
         type: EventType.WriteStdout,
         message: ">>> ",
+        receivedAt: new Date(),
       };
 
       onEvent(stdoutEvent2);
@@ -190,6 +196,7 @@ export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler 
       const stdoutEvent3: WriteStdoutEvent = {
         type: EventType.WriteStdout,
         message: "print('Hello from Virtual Hub!')\r\nHello from Virtual Hub!\r\n>>> ",
+        receivedAt: new Date(),
       };
 
       onEvent(stdoutEvent3);
