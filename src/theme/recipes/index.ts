@@ -1,3 +1,4 @@
+import { segmentGroup } from "./segment-group";
 import { scrollArea } from "./scroll-area";
 import { radioCardGroup } from "./radio-card-group";
 import { icon } from "./icon";
@@ -26,6 +27,7 @@ export const recipes = {
   menu,
   icon,
   radioCardGroup,
-  scrollArea
+  scrollArea,
+  segmentGroup
 }
 export const slotRecipes = {}

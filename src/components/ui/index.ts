@@ -11,6 +11,7 @@ export { Loader, type LoaderProps } from "./loader";
 export * as Menu from "./menu";
 export * as RadioCardGroup from "./radio-card-group";
 export * as ScrollArea from "./scroll-area";
+export * as SegmentGroup from "./segment-group";
 export { Spinner, type SpinnerProps } from "./spinner";
 export * as Table from "./table";
 export { Text, type TextProps } from "./text";

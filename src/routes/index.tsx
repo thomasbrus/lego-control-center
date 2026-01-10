@@ -1,4 +1,4 @@
-import { Badge, Button, Card, Group, Heading, Icon, RadioCardGroup, ScrollArea, Table, Text } from "@/components/ui";
+import { Badge, Button, Card, Group, Heading, Icon, RadioCardGroup, ScrollArea, SegmentGroup, Table, Text } from "@/components/ui";
 import { useDesiredState } from "@/lib/desired-state/hooks";
 import { DesiredState, LightState } from "@/lib/desired-state/types";
 import { AnyEvent } from "@/lib/events/types";
@@ -7,11 +7,12 @@ import { writeStdinWithResponse } from "@/lib/hubs/actions";
 import { HubsProvider } from "@/lib/hubs/context";
 import { useHub, useHubActions, useHubs, useVirtualHub, useVirtualHubActions, useVirtualHubs } from "@/lib/hubs/hooks";
 import { Hub, HubStatus } from "@/lib/hubs/types";
+import { EventType } from "@/lib/pybricks/protocol";
 import { RadioGroupValueChangeDetails } from "@ark-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { BluetoothIcon, BracesIcon, LightbulbIcon, RadioIcon } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { css } from "styled-system/css";
+import React, { useCallback, useEffect, useState } from "react";
+import { css, Styles } from "styled-system/css";
 import { Box, Grid, styled } from "styled-system/jsx";
 import z from "zod";
 
@@ -52,7 +53,7 @@ export function Columns() {
   }
 
   return (
-    <styled.main p="8" display="grid" gridTemplateColumns={{ md: "1fr 1fr", lg: "1fr 1fr 1fr" }} gap="6">
+    <styled.main p="8" display="grid" gridTemplateColumns={{ md: "repeat(2, minmax(0, 1fr))", lg: "repeat(3, minmax(0, 1fr))" }} gap="6">
       {columnBefore}
       {hubIds.map((hubId) => (
         <HubColumn key={hubId} hubId={hubId} />
@@ -119,17 +120,40 @@ function ConnectHubCard({ title, description }: { title?: string; description: s
 
   return (
     <Card.Root p="6" gap="4">
-      <Box bg="gray.2" minH="48" borderRadius="l2" display="flex" alignItems="center" justifyContent="center" p="6">
-        <styled.div textAlign="center">
-          <Heading>{title}</Heading>
-          <Text color="fg.muted">{description}</Text>
-          <Button colorPalette="[primary]" mt="4" onClick={() => connect()}>
-            <BluetoothIcon />
-            Connect
-          </Button>
-        </styled.div>
-      </Box>
+      <EmptyState title={title} description={description}>
+        <Button colorPalette="[primary]" mt="4" onClick={() => connect()}>
+          <BluetoothIcon />
+          Connect
+        </Button>
+      </EmptyState>
     </Card.Root>
+  );
+}
+
+function EmptyState({
+  title,
+  description,
+  children,
+  ...props
+}: { title?: string; description: string; children?: React.ReactNode } & Styles) {
+  const defaultProps = css.raw({
+    bg: "gray.2",
+    borderRadius: "l2",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    px: "6",
+    py: "8",
+  });
+
+  return (
+    <Box {...defaultProps} {...props}>
+      <styled.div textAlign="center">
+        {title && <Heading>{title}</Heading>}
+        {description && <Text color="fg.muted">{description}</Text>}
+        {children}
+      </styled.div>
+    </Box>
   );
 }
 
@@ -217,6 +241,20 @@ function DesiredStateCard({ desiredState }: { desiredState: DesiredState }) {
 }
 
 function EventsCard({ events }: { events: AnyEvent[] }) {
+  const [eventType, setEventType] = useState<"all" | "status" | "stdout">("stdout");
+
+  const eventTypes = {
+    all: (_event: AnyEvent) => true,
+    status: (event: AnyEvent) => event.type === EventType.StatusReport,
+    stdout: (event: AnyEvent) => event.type === EventType.WriteStdout,
+  };
+
+  const filteredEvents = events.filter((event) => {
+    return eventTypes[eventType](event);
+  });
+
+  const items = Object.keys(eventTypes).map((key) => ({ value: key, label: key.charAt(0).toUpperCase() + key.slice(1) }));
+
   return (
     <Card.Root>
       <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
@@ -228,13 +266,11 @@ function EventsCard({ events }: { events: AnyEvent[] }) {
         </Card.Title>
       </Card.Header>
       <Card.Body display="block">
-        {events.length === 0 ? (
-          <Text color="fg.muted" fontSize="sm">
-            No events yet
-          </Text>
-        ) : (
-          <EventsTable events={events} />
-        )}
+        <SegmentGroup.Root fitted mb="4" value={eventType} onValueChange={(details) => setEventType(details.value as typeof eventType)}>
+          <SegmentGroup.Indicator />
+          <SegmentGroup.Items items={items} />
+        </SegmentGroup.Root>
+        {filteredEvents.length === 0 ? <EmptyState description="No events yet." /> : <EventsTable events={filteredEvents} />}
       </Card.Body>
     </Card.Root>
   );
@@ -242,7 +278,7 @@ function EventsCard({ events }: { events: AnyEvent[] }) {
 
 function EventsTable({ events }: { events: AnyEvent[] }) {
   return (
-    <ScrollArea.Default size="xs" height="56" scrollbar="visible">
+    <ScrollArea.Default size="xs" maxH="64" scrollbar="visible">
       <Table.Root variant="surface">
         <Table.Head>
           <Table.Row>
