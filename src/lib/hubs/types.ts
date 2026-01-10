@@ -1,4 +1,15 @@
-import { AnyEvent } from "@/lib/events/types";
+export interface Hub {
+  id: BluetoothDevice["id"];
+  name: BluetoothDevice["name"];
+  device: BluetoothDevice;
+  status: HubStatus;
+  capabilities?: HubCapabilities;
+}
+
+export type ReadyHub = Hub & {
+  status: HubStatus.Ready;
+  capabilities: HubCapabilities;
+};
 
 export enum HubStatus {
   Idle = "idle",
@@ -13,18 +24,3 @@ export enum HubStatus {
 export interface HubCapabilities {
   maxWriteSize: number;
 }
-
-export interface Hub {
-  id: BluetoothDevice["id"];
-  name: BluetoothDevice["name"];
-  device: BluetoothDevice;
-  status: HubStatus;
-  capabilities?: HubCapabilities;
-}
-
-export type ReadyHub = Hub & {
-  status: HubStatus.Ready;
-  capabilities: HubCapabilities;
-};
-
-export type EventHandler = (event: AnyEvent) => void;

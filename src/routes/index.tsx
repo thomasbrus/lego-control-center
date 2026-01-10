@@ -68,8 +68,7 @@ function HubColumn({ hubId }: { hubId: Hub["id"] }) {
   const [events, setEvents] = useState<AnyEvent[]>([]);
 
   const handleEvent = useCallback((event: AnyEvent) => {
-    setEvents((prev) => [...prev.slice(-49), event]); // Keep last 50
-    console.debug("Event received:", event);
+    setEvents((prev) => [...prev.slice(-1000), event]);
   }, []);
 
   const { testing } = Route.useSearch();
@@ -263,7 +262,7 @@ function EventsCard({ events }: { events: AnyEvent[] }) {
           <Icon size="md">
             <RadioIcon />
           </Icon>
-          Events ({events.length})
+          Events
         </Card.Title>
       </Card.Header>
       <Card.Body display="block">

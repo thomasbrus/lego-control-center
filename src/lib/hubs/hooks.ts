@@ -1,8 +1,8 @@
 import { parseNotification } from "@/lib/events/parsing";
-import { StatusReportEvent, WriteStdoutEvent } from "@/lib/events/types";
+import { EventHandler, StatusReportEvent, WriteStdoutEvent } from "@/lib/events/types";
 import { disconnect, shutdown } from "@/lib/hubs/actions";
 import { HubsContext } from "@/lib/hubs/context";
-import { EventHandler, Hub, HubStatus } from "@/lib/hubs/types";
+import { Hub, HubStatus } from "@/lib/hubs/types";
 import { getPybricksControlCharacteristic, startReplUserProgram } from "@/lib/pybricks/commands";
 import { requestDeviceOptions } from "@/lib/pybricks/constants";
 import { EventType } from "@/lib/pybricks/protocol";
@@ -98,6 +98,7 @@ export function useHub(id: Hub["id"], options?: { onEvent?: EventHandler }) {
           if (!target.value) return;
 
           const event = parseNotification(target.value, new Date());
+
           if (event) onEvent(event);
         };
 
@@ -151,7 +152,7 @@ export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler 
 
       const statusEvent1: StatusReportEvent = {
         type: EventType.StatusReport,
-        flags: 0,
+        flags: { BatteryLowVoltageWarning: true },
         runningProgId: 0,
         selectedSlot: 0,
         receivedAt: new Date(),
@@ -173,7 +174,7 @@ export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler 
 
       const statusEvent2: StatusReportEvent = {
         type: EventType.StatusReport,
-        flags: 1,
+        flags: { BatteryLowVoltageWarning: false },
         runningProgId: 1,
         selectedSlot: 0,
         receivedAt: new Date(),
