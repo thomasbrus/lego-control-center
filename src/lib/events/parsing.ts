@@ -1,12 +1,12 @@
-import { decodeMessage } from "@/lib/message/encoding";
+import { decodeMessage } from "@/lib/messages/encoding";
 import { EventType, getEventType, parseStatusReport, parseWriteStdout } from "@/lib/pybricks/protocol";
-import { Event } from "./types";
+import { AnyEvent } from "./types";
 
 /**
- * Parses a raw notification DataView into a typed Event.
+ * Parses a raw notification DataView into a typed event.
  * Returns null for unknown event types.
  */
-export function parseEvent(data: DataView): Event | null {
+export function parseNotification(data: DataView): AnyEvent | null {
   const eventType = getEventType(data);
 
   switch (eventType) {

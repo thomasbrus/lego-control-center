@@ -1,12 +1,12 @@
-import { Badge, Button, Card, Group, Heading, Icon, RadioCardGroup, Table, Text } from "@/components/ui";
+import { Badge, Button, Card, Group, Heading, Icon, RadioCardGroup, ScrollArea, Table, Text } from "@/components/ui";
 import { useDesiredState } from "@/lib/desired-state/hooks";
 import { DesiredState, LightState } from "@/lib/desired-state/types";
-import { Event } from "@/lib/event/types";
-import { writeStdinWithResponse } from "@/lib/hub/actions";
-import { HubsProvider } from "@/lib/hub/context";
-import { useHub, useHubActions, useHubs, useVirtualHub, useVirtualHubActions, useVirtualHubs } from "@/lib/hub/hooks";
-import { Hub, HubStatus } from "@/lib/hub/types";
-import { EventType } from "@/lib/pybricks/protocol";
+import { AnyEvent } from "@/lib/events/types";
+import { getEventTypeName } from "@/lib/events/utils";
+import { writeStdinWithResponse } from "@/lib/hubs/actions";
+import { HubsProvider } from "@/lib/hubs/context";
+import { useHub, useHubActions, useHubs, useVirtualHub, useVirtualHubActions, useVirtualHubs } from "@/lib/hubs/hooks";
+import { Hub, HubStatus } from "@/lib/hubs/types";
 import { RadioGroupValueChangeDetails } from "@ark-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { BluetoothIcon, BracesIcon, LightbulbIcon, RadioIcon } from "lucide-react";
@@ -65,9 +65,9 @@ export function Columns() {
 
 function HubColumn({ hubId }: { hubId: Hub["id"] }) {
   const [desiredState, setDesiredState] = useState<DesiredState>({ light: LightState.GREEN });
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<AnyEvent[]>([]);
 
-  const handleEvent = useCallback((event: Event) => {
+  const handleEvent = useCallback((event: AnyEvent) => {
     setEvents((prev) => [...prev.slice(-49), event]); // Keep last 50
     console.debug("Event received:", event);
   }, []);
@@ -216,25 +216,7 @@ function DesiredStateCard({ desiredState }: { desiredState: DesiredState }) {
   );
 }
 
-function EventsCard({ events }: { events: Event[] }) {
-  function getEventTypeName(type: EventType): string {
-    switch (type) {
-      case EventType.StatusReport:
-        return "StatusReport";
-      case EventType.WriteStdout:
-        return "WriteStdout";
-      case EventType.WriteAppData:
-        return "WriteAppData";
-      default:
-        return "Unknown";
-    }
-  }
-
-  function getEventAttributes(event: Event): string {
-    const { type, ...rest } = event;
-    return JSON.stringify(rest);
-  }
-
+function EventsCard({ events }: { events: AnyEvent[] }) {
   return (
     <Card.Root>
       <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
@@ -245,37 +227,60 @@ function EventsCard({ events }: { events: Event[] }) {
           Events ({events.length})
         </Card.Title>
       </Card.Header>
-      <Card.Body maxH="48" overflow="auto">
+      <Card.Body display="block">
         {events.length === 0 ? (
           <Text color="fg.muted" fontSize="sm">
             No events yet
           </Text>
         ) : (
-          <Table.Root variant="plain">
-            <Table.Head>
-              <Table.Row>
-                <Table.Header>Type</Table.Header>
-                <Table.Header>Attributes</Table.Header>
-              </Table.Row>
-            </Table.Head>
-            <Table.Body>
-              {events.map((event, i) => (
-                <Table.Row key={i}>
-                  <Table.Cell>
-                    <Badge size="sm">{getEventTypeName(event.type)}</Badge>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <styled.code fontSize="xs" wordBreak="break-all">
-                      {getEventAttributes(event)}
-                    </styled.code>
-                  </Table.Cell>
-                </Table.Row>
-              ))}
-            </Table.Body>
-          </Table.Root>
+          <EventsTable events={events} />
         )}
       </Card.Body>
     </Card.Root>
+  );
+}
+
+function EventsTable({ events }: { events: AnyEvent[] }) {
+  return (
+    <ScrollArea.Default size="xs" height="56" scrollbar="visible">
+      <Table.Root variant="surface">
+        <Table.Head>
+          <Table.Row>
+            <Table.Header position="sticky" top="0" zIndex="docked">
+              Type
+            </Table.Header>
+            <Table.Header position="sticky" top="0" zIndex="docked">
+              Attributes
+            </Table.Header>
+          </Table.Row>
+        </Table.Head>
+        <Table.Body>
+          {events.map((event, i) => (
+            <EventsTableRow key={i} event={event} />
+          ))}
+        </Table.Body>
+      </Table.Root>
+    </ScrollArea.Default>
+  );
+}
+
+function getEventAttributes(event: AnyEvent): string {
+  const { type, ...rest } = event;
+  return JSON.stringify(rest);
+}
+
+function EventsTableRow({ event }: { event: AnyEvent }) {
+  return (
+    <Table.Row verticalAlign="top">
+      <Table.Cell>
+        <Badge size="sm">{getEventTypeName(event.type)}</Badge>
+      </Table.Cell>
+      <Table.Cell>
+        <styled.code fontSize="xs" whiteSpace="pre-wrap">
+          {getEventAttributes(event)}
+        </styled.code>
+      </Table.Cell>
+    </Table.Row>
   );
 }
 

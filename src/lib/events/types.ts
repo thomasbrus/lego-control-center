@@ -12,4 +12,4 @@ export interface WriteStdoutEvent {
   message: string;
 }
 
-export type Event = StatusReportEvent | WriteStdoutEvent;
+export type AnyEvent = StatusReportEvent | WriteStdoutEvent;

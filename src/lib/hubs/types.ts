@@ -1,4 +1,4 @@
-import { Event } from "@/lib/event/types";
+import { AnyEvent } from "@/lib/events/types";
 
 export enum HubStatus {
   Idle = "idle",
@@ -27,4 +27,4 @@ export type ReadyHub = Hub & {
   capabilities: HubCapabilities;
 };
 
-export type EventHandler = (event: Event) => void;
+export type EventHandler = (event: AnyEvent) => void;

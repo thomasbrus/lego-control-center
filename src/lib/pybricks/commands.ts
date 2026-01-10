@@ -1,5 +1,5 @@
 import { assertConnected } from "@/lib/device/utils";
-import { encodeMessage } from "@/lib/message/encoding";
+import { encodeMessage } from "@/lib/messages/encoding";
 import { pybricksControlCharacteristicUUID, pybricksServiceUUID } from "./constants";
 import { BuiltinProgramId, createStartUserProgramCommand, createStopUserProgramCommand, createWriteStdinCommand } from "./protocol";
 

@@ -1,11 +1,14 @@
-import { parseEvent } from "@/lib/event/parsing";
-import { disconnect, shutdown } from "@/lib/hub/actions";
-import { HubsContext } from "@/lib/hub/context";
-import { EventHandler, Hub, HubStatus } from "@/lib/hub/types";
+import { parseNotification } from "@/lib/events/parsing";
+import { StatusReportEvent, WriteStdoutEvent } from "@/lib/events/types";
+import { disconnect, shutdown } from "@/lib/hubs/actions";
+import { HubsContext } from "@/lib/hubs/context";
+import { EventHandler, Hub, HubStatus } from "@/lib/hubs/types";
 import { getPybricksControlCharacteristic, startReplUserProgram } from "@/lib/pybricks/commands";
 import { requestDeviceOptions } from "@/lib/pybricks/constants";
+import { EventType } from "@/lib/pybricks/protocol";
 import { useCallback, useContext, useEffect, useRef } from "react";
 import { getCapabilities } from "../device/utils";
+import { delay } from "../utils";
 
 export function useHubs() {
   const { hubIds, addHub, removeHub, updateHubStatus } = useHubsContext();
@@ -42,7 +45,7 @@ export function useHubs() {
 }
 
 export function useVirtualHubs(): ReturnType<typeof useHubs> {
-  const { hubIds, addHub } = useHubsContext();
+  const { hubIds, addHub, updateHubStatus } = useHubsContext();
 
   const connect = useCallback(async () => {
     const id = `virtual-hub-${crypto.randomUUID()}`;
@@ -50,14 +53,24 @@ export function useVirtualHubs(): ReturnType<typeof useHubs> {
       id,
       name: "Virtual Hub",
       device: {} as BluetoothDevice,
-      status: HubStatus.Ready,
+      status: HubStatus.Connecting,
       capabilities: {
         maxWriteSize: 24,
       },
     };
     addHub(hub);
-    return hub;
-  }, [addHub]);
+
+    await delay(100);
+    updateHubStatus(id, HubStatus.RetrievingCapabilities);
+
+    await delay(50);
+    updateHubStatus(id, HubStatus.StartingRepl);
+
+    await delay(100);
+    updateHubStatus(id, HubStatus.Ready);
+
+    return { ...hub, status: HubStatus.Ready };
+  }, [addHub, updateHubStatus]);
 
   return { hubIds, connect };
 }
@@ -78,11 +91,11 @@ export function useHub(id: Hub["id"], options?: { onEvent?: EventHandler }) {
       try {
         const controlCharacteristic = await getPybricksControlCharacteristic(hub.device);
 
-        const listener = (domEvent: globalThis.Event) => {
+        const listener = (domEvent: Event) => {
           const target = domEvent.target as BluetoothRemoteGATTCharacteristic;
           if (!target.value) return;
 
-          const event = parseEvent(target.value);
+          const event = parseNotification(target.value);
           if (event) onEvent(event);
         };
 
@@ -121,9 +134,69 @@ export function useHub(id: Hub["id"], options?: { onEvent?: EventHandler }) {
   return { hub } as const;
 }
 
-export function useVirtualHub(id: Hub["id"], _options?: { onEvent?: EventHandler }): ReturnType<typeof useHub> {
+export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler }): ReturnType<typeof useHub> {
+  const { onEvent } = options ?? {};
   const { getHub } = useHubsContext();
   const hub = getHub(id);
+
+  useEffect(() => {
+    if (!hub || hub.status !== HubStatus.Ready || !onEvent) return;
+
+    async function emitVirtualEvents() {
+      if (!onEvent) return;
+
+      await delay(100);
+
+      const statusEvent1: StatusReportEvent = {
+        type: EventType.StatusReport,
+        flags: 0,
+        runningProgId: 0,
+        selectedSlot: 0,
+      };
+
+      onEvent(statusEvent1);
+
+      await delay(50);
+
+      const stdoutEvent1: WriteStdoutEvent = {
+        type: EventType.WriteStdout,
+        message: "Virtual Hub initialized\r\n",
+      };
+
+      onEvent(stdoutEvent1);
+
+      await delay(100);
+
+      const statusEvent2: StatusReportEvent = {
+        type: EventType.StatusReport,
+        flags: 1,
+        runningProgId: 1,
+        selectedSlot: 0,
+      };
+
+      onEvent(statusEvent2);
+
+      await delay(50);
+
+      const stdoutEvent2: WriteStdoutEvent = {
+        type: EventType.WriteStdout,
+        message: ">>> ",
+      };
+
+      onEvent(stdoutEvent2);
+
+      await delay(500);
+
+      const stdoutEvent3: WriteStdoutEvent = {
+        type: EventType.WriteStdout,
+        message: "print('Hello from Virtual Hub!')\r\nHello from Virtual Hub!\r\n>>> ",
+      };
+
+      onEvent(stdoutEvent3);
+    }
+
+    emitVirtualEvents();
+  }, [hub?.id, hub?.status, onEvent]);
 
   return { hub } as const;
 }
@@ -147,17 +220,19 @@ export function useHubActions(id: Hub["id"]) {
 }
 
 export function useVirtualHubActions(id: Hub["id"]): ReturnType<typeof useHubActions> {
-  const { removeHub } = useHubsContext();
+  const { removeHub, updateHubStatus } = useHubsContext();
 
-  async function disconnectHub() {
+  const disconnectHub = useCallback(async () => {
+    updateHubStatus(id, HubStatus.Disconnected);
+    await delay(200);
     removeHub(id);
-    return Promise.resolve();
-  }
+  }, [id, removeHub, updateHubStatus]);
 
-  async function shutdownHub() {
+  const shutdownHub = useCallback(async () => {
+    updateHubStatus(id, HubStatus.Disconnected);
+    await delay(300);
     removeHub(id);
-    return Promise.resolve();
-  }
+  }, [id, removeHub, updateHubStatus]);
 
   return { disconnectHub, shutdownHub } as const;
 }
