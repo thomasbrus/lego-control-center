@@ -147,14 +147,16 @@ export function useHubActions(id: Hub["id"]) {
 }
 
 export function useVirtualHubActions(id: Hub["id"]): ReturnType<typeof useHubActions> {
+  const { removeHub } = useHubsContext();
+
   async function disconnectHub() {
-    console.log(`Virtual hub ${id} disconnected`);
-    return new Promise<void>((resolve) => setTimeout(resolve, 100));
+    removeHub(id);
+    return Promise.resolve();
   }
 
   async function shutdownHub() {
-    console.log(`Virtual hub ${id} shutdown`);
-    return new Promise<void>((resolve) => setTimeout(resolve, 100));
+    removeHub(id);
+    return Promise.resolve();
   }
 
   return { disconnectHub, shutdownHub } as const;
