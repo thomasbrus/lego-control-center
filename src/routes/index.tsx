@@ -230,7 +230,7 @@ function DesiredStateCard({ desiredState }: { desiredState: DesiredState }) {
         </Card.Title>
       </Card.Header>
       <Card.Body>
-        <styled.code bg="gray.2" p="2" borderRadius="l1" fontSize="sm">
+        <styled.code bg="gray.2" p="2" borderRadius="l1" fontSize="sm" whiteSpace="pre-wrap">
           {JSON.stringify(desiredState, null, 2)}
         </styled.code>
       </Card.Body>

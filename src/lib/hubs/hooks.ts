@@ -79,7 +79,7 @@ export function useVirtualHubs(): ReturnType<typeof useHubs> {
 
 export function useHub(id: Hub["id"], options?: { onEvent?: EventHandler }) {
   const { onEvent } = options ?? {};
-  const { getHub } = useHubsContext();
+  const { getHub, updateHubStatusFlags } = useHubsContext();
 
   const hub = getHub(id);
   const unsubscribeRef = useRef<null | (() => Promise<void>)>(null);
@@ -99,7 +99,13 @@ export function useHub(id: Hub["id"], options?: { onEvent?: EventHandler }) {
 
           const event = parseNotification(target.value, new Date());
 
-          if (event) onEvent(event);
+          if (event) {
+            if (event.type === EventType.StatusReport) {
+              updateHubStatusFlags(id, event.flags);
+            }
+
+            onEvent(event);
+          }
         };
 
         controlCharacteristic.addEventListener("characteristicvaluechanged", listener);
@@ -139,7 +145,7 @@ export function useHub(id: Hub["id"], options?: { onEvent?: EventHandler }) {
 
 export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler }): ReturnType<typeof useHub> {
   const { onEvent } = options ?? {};
-  const { getHub } = useHubsContext();
+  const { getHub, updateHubStatusFlags } = useHubsContext();
   const hub = getHub(id);
 
   useEffect(() => {
@@ -158,6 +164,7 @@ export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler 
         receivedAt: new Date(),
       };
 
+      updateHubStatusFlags(id, statusEvent1.flags);
       onEvent(statusEvent1);
 
       await delay(50);
@@ -180,6 +187,7 @@ export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler 
         receivedAt: new Date(),
       };
 
+      updateHubStatusFlags(id, statusEvent2.flags);
       onEvent(statusEvent2);
 
       await delay(50);

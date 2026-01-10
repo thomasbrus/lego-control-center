@@ -1,8 +1,11 @@
+import { StatusFlags } from "@/lib/events/types";
+
 export interface Hub {
   id: BluetoothDevice["id"];
   name: BluetoothDevice["name"];
   device: BluetoothDevice;
   status: HubStatus;
+  statusFlags?: StatusFlags;
   capabilities?: HubCapabilities;
 }
 

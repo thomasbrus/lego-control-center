@@ -1,3 +1,4 @@
+import { StatusFlags } from "@/lib/events/types";
 import { Hub, HubStatus } from "@/lib/hubs/types";
 import { createContext, useState } from "react";
 
@@ -7,6 +8,7 @@ interface HubsContextValue {
   addHub: (hub: Hub) => void;
   removeHub: (id: Hub["id"]) => void;
   updateHubStatus: (id: Hub["id"], status: HubStatus) => void;
+  updateHubStatusFlags: (id: Hub["id"], statusFlags: StatusFlags) => void;
 }
 
 export const HubsContext = createContext<HubsContextValue | undefined>(undefined);
@@ -36,8 +38,16 @@ export function HubsProvider({ children }: { children: React.ReactNode }) {
     });
   }
 
+  function updateHubStatusFlags(id: Hub["id"], statusFlags: StatusFlags) {
+    setHubs((prev) => {
+      const hub = prev.get(id);
+      if (!hub) return prev;
+      return mapWithKey(prev, id, { ...hub, statusFlags });
+    });
+  }
+
   return (
-    <HubsContext.Provider value={{ hubIds: Array.from(hubs.keys()), getHub, addHub, removeHub, updateHubStatus }}>
+    <HubsContext.Provider value={{ hubIds: Array.from(hubs.keys()), getHub, addHub, removeHub, updateHubStatus, updateHubStatusFlags }}>
       {children}
     </HubsContext.Provider>
   );
