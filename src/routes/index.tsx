@@ -74,13 +74,11 @@ function HubColumn({ hubId }: { hubId: Hub["id"] }) {
   const { hub } = testing ? useVirtualHub(hubId, { onEvent: handleEvent }) : useHub(hubId, { onEvent: handleEvent });
   const { disconnectHub, shutdownHub } = testing ? useVirtualHubActions(hubId) : useHubActions(hubId);
 
-  const isReady = hub.status === HubStatus.Ready;
-
   return (
     <styled.div display="flex" flexDirection="column" gap="4">
       <DetailsCard hub={hub} disconnectHub={disconnectHub} shutdownHub={shutdownHub} />
       <EventsCard events={events} />
-      <LightCard disabled={!isReady} />
+      <LightCard hub={hub} />
       <DemoCard hub={hub} />
     </styled.div>
   );
@@ -193,6 +191,8 @@ function DetailsCard({
 }
 
 function DemoCard({ hub }: { hub: Hub }) {
+  const disabled = hub.status !== HubStatus.Ready;
+
   const program = `
 def say_hi():
     print("Hi there!")
@@ -215,13 +215,13 @@ say_hi()`;
         </styled.code>
       </Card.Body>
       <Card.Footer>
-        <Button variant="outline" onClick={() => enterPasteMode(hub)}>
+        <Button disabled={disabled} variant="outline" onClick={() => enterPasteMode(hub)}>
           Enter paste mode
         </Button>
-        <Button variant="outline" onClick={() => writeStdinWithResponse(hub, program)}>
+        <Button disabled={disabled} variant="outline" onClick={() => writeStdinWithResponse(hub, program)}>
           Send program
         </Button>
-        <Button variant="outline" onClick={() => exitPasteMode(hub)}>
+        <Button disabled={disabled} variant="outline" onClick={() => exitPasteMode(hub)}>
           Exit paste mode
         </Button>
       </Card.Footer>
@@ -329,8 +329,9 @@ const lightCollection = createListCollection({
   ],
 });
 
-function LightCard({ disabled }: { disabled?: boolean }) {
+function LightCard({ hub }: { hub: Hub }) {
   const [light, setLight] = useState<number>(5);
+  const disabled = hub.status !== HubStatus.Ready;
 
   function handleValueChange(details: ValueChangeDetails) {
     setLight(Number(details.value));
