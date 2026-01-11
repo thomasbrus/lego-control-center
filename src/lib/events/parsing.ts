@@ -1,5 +1,13 @@
 import { decodeMessage } from "@/lib/messages/encoding";
-import { EventType, getEventType, parseStatusReport, parseWriteStdout, Status, statusToFlag } from "@/lib/pybricks/protocol";
+import {
+  EventType,
+  getEventType,
+  parseStatusReport,
+  parseWriteAppData,
+  parseWriteStdout,
+  Status,
+  statusToFlag,
+} from "@/lib/pybricks/protocol";
 import { AnyEvent, StatusFlags } from "./types";
 
 /**
@@ -32,7 +40,12 @@ export function parseNotification(data: DataView, receivedAt: Date): AnyEvent | 
       const message = decodeMessage(new Uint8Array(buffer));
       return { type: EventType.WriteStdout, message, receivedAt };
     }
-    default:
-      return null;
+    case EventType.WriteAppData: {
+      const buffer = parseWriteAppData(data);
+      return { type: EventType.WriteAppData, data: buffer, receivedAt };
+    }
+    default: {
+      throw new Error(`Unknown event type: ${eventType}`);
+    }
   }
 }

@@ -31,8 +31,11 @@ export const card = defineSlotRecipe({
       display: "flex",
       justifyContent: "flex-end",
       gap: "3",
-      pb: "6",
-      pt: "2",
+      p: "6",
+      pt: {
+        base: "2",
+        "&:only-child": "6",
+      },
     },
     title: {
       textStyle: "lg",

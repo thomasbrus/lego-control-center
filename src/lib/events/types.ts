@@ -20,6 +20,11 @@ export interface WriteStdoutEvent extends BaseEvent {
   message: string;
 }
 
-export type AnyEvent = StatusReportEvent | WriteStdoutEvent;
+export interface WriteAppDataEvent extends BaseEvent {
+  type: EventType.WriteAppData;
+  data: ArrayBuffer;
+}
+
+export type AnyEvent = StatusReportEvent | WriteStdoutEvent | WriteAppDataEvent;
 
 export type EventHandler = (event: AnyEvent) => void;

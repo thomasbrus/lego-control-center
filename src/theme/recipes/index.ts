@@ -1,3 +1,5 @@
+import { select } from "./select";
+import { switchRecipe } from "./switch";
 import { segmentGroup } from "./segment-group";
 import { scrollArea } from "./scroll-area";
 import { radioCardGroup } from "./radio-card-group";
@@ -28,6 +30,8 @@ export const recipes = {
   icon,
   radioCardGroup,
   scrollArea,
-  segmentGroup
+  segmentGroup,
+  switchRecipe,
+  select
 }
 export const slotRecipes = {}

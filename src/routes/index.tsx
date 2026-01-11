@@ -1,18 +1,17 @@
-import { Badge, Button, Card, Group, Heading, Icon, RadioCardGroup, ScrollArea, SegmentGroup, Table, Text } from "@/components/ui";
-import { useDesiredState } from "@/lib/desired-state/hooks";
-import { DesiredState, LightState } from "@/lib/desired-state/types";
+import { Badge, Button, Card, Group, Heading, Icon, ScrollArea, SegmentGroup, Select, Table, Text } from "@/components/ui";
+import { ValueChangeDetails } from "@/components/ui/select";
 import { AnyEvent } from "@/lib/events/types";
-import { writeStdinWithResponse } from "@/lib/hubs/actions";
+import { enterPasteMode, exitPasteMode, writeStdinWithResponse } from "@/lib/hubs/actions";
 import { HubsProvider } from "@/lib/hubs/context";
 import { useHub, useHubActions, useHubs, useVirtualHub, useVirtualHubActions, useVirtualHubs } from "@/lib/hubs/hooks";
 import { Hub, HubStatus } from "@/lib/hubs/types";
 import { EventType } from "@/lib/pybricks/protocol";
-import { RadioGroupValueChangeDetails } from "@ark-ui/react";
+import { createListCollection } from "@ark-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { BluetoothIcon, BracesIcon, LightbulbIcon, RadioIcon } from "lucide-react";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { css, Styles } from "styled-system/css";
-import { Box, Grid, styled } from "styled-system/jsx";
+import { Box, styled } from "styled-system/jsx";
 import z from "zod";
 
 export const Route = createFileRoute("/")({
@@ -64,7 +63,6 @@ export function Columns() {
 }
 
 function HubColumn({ hubId }: { hubId: Hub["id"] }) {
-  const [desiredState, setDesiredState] = useState<DesiredState>({ light: LightState.GREEN });
   const [events, setEvents] = useState<AnyEvent[]>([]);
 
   const handleEvent = useCallback((event: AnyEvent) => {
@@ -78,36 +76,12 @@ function HubColumn({ hubId }: { hubId: Hub["id"] }) {
 
   const isReady = hub.status === HubStatus.Ready;
 
-  const commitCallback = useCallback(
-    async (state: DesiredState) => {
-      if (hub.status !== HubStatus.Ready) return;
-
-      if (state.light === LightState.OFF) {
-        await writeStdinWithResponse(hub, `hub.light.off()\r\n`);
-      } else {
-        await writeStdinWithResponse(hub, `hub.light.on(${state.light})\r\n`);
-      }
-    },
-    [hub]
-  );
-
-  const { reconcileState } = useDesiredState(commitCallback);
-
-  useEffect(() => {
-    if (hub.status !== HubStatus.Ready) return;
-    reconcileState(desiredState);
-  }, [JSON.stringify(desiredState), reconcileState, hub.status]);
-
-  function setLight(light: LightState) {
-    setDesiredState((prev) => ({ ...prev, light }));
-  }
-
   return (
     <styled.div display="flex" flexDirection="column" gap="4">
       <DetailsCard hub={hub} disconnectHub={disconnectHub} shutdownHub={shutdownHub} />
       <EventsCard events={events} />
-      <LightCard light={desiredState.light} setLight={setLight} disabled={!isReady} />
-      <DesiredStateCard desiredState={desiredState} />
+      <LightCard disabled={!isReady} />
+      <DemoCard hub={hub} />
     </styled.div>
   );
 }
@@ -218,7 +192,13 @@ function DetailsCard({
   );
 }
 
-function DesiredStateCard({ desiredState }: { desiredState: DesiredState }) {
+function DemoCard({ hub }: { hub: Hub }) {
+  const program = `
+def say_hi():
+    print("Hi there!")
+
+say_hi()`;
+
   return (
     <Card.Root>
       <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
@@ -226,14 +206,25 @@ function DesiredStateCard({ desiredState }: { desiredState: DesiredState }) {
           <Icon size="md">
             <BracesIcon />
           </Icon>
-          Desired State
+          Demo
         </Card.Title>
       </Card.Header>
       <Card.Body>
         <styled.code bg="gray.2" p="2" borderRadius="l1" fontSize="sm" whiteSpace="pre-wrap">
-          {JSON.stringify(desiredState, null, 2)}
+          {"{ ... }"}
         </styled.code>
       </Card.Body>
+      <Card.Footer>
+        <Button variant="outline" onClick={() => enterPasteMode(hub)}>
+          Enter paste mode
+        </Button>
+        <Button variant="outline" onClick={() => writeStdinWithResponse(hub, program)}>
+          Send program
+        </Button>
+        <Button variant="outline" onClick={() => exitPasteMode(hub)}>
+          Exit paste mode
+        </Button>
+      </Card.Footer>
     </Card.Root>
   );
 }
@@ -246,7 +237,7 @@ function EventsCard({ events }: { events: AnyEvent[] }) {
     stdout: (event: AnyEvent) => event.type === EventType.WriteStdout,
   };
 
-  const tableEvents = [...events].reverse().filter((event) => {
+  const tableEvents = [...events].filter((event) => {
     return eventTypes[eventType](event);
   });
 
@@ -324,32 +315,25 @@ function EventsTableRow({ event }: { event: AnyEvent }) {
   );
 }
 
-const lightChoices: { value: LightState; title: string }[] = [
-  { value: LightState.OFF, title: "Off" },
-  { value: LightState.GREEN, title: "Green" },
-  { value: LightState.RED, title: "Red" },
-  { value: LightState.BLUE, title: "Blue" },
-  { value: LightState.YELLOW, title: "Yellow" },
-];
+const lightCollection = createListCollection({
+  items: [
+    { value: "1", label: "Black" },
+    { value: "2", label: "Red" },
+    { value: "3", label: "Orange" },
+    { value: "4", label: "Yellow" },
+    { value: "5", label: "Green" },
+    { value: "6", label: "Cyan" },
+    { value: "7", label: "Blue" },
+    { value: "8", label: "Violet" },
+    { value: "9", label: "Magenta" },
+  ],
+});
 
-function LightCard({ light, setLight, disabled }: { light: LightState; setLight: (light: LightState) => void; disabled?: boolean }) {
-  function handleValueChange(details: RadioGroupValueChangeDetails) {
-    setLight(details.value as LightState);
-  }
+function LightCard({ disabled }: { disabled?: boolean }) {
+  const [light, setLight] = useState<number>(5);
 
-  function getColorPaletteProps(value: LightState) {
-    switch (value) {
-      case LightState.GREEN:
-        return css.raw({ colorPalette: "green" });
-      case LightState.RED:
-        return css.raw({ colorPalette: "red" });
-      case LightState.BLUE:
-        return css.raw({ colorPalette: "blue" });
-      case LightState.YELLOW:
-        return css.raw({ colorPalette: "yellow" });
-      default:
-        return {};
-    }
+  function handleValueChange(details: ValueChangeDetails) {
+    setLight(Number(details.value));
   }
 
   return (
@@ -363,25 +347,25 @@ function LightCard({ light, setLight, disabled }: { light: LightState; setLight:
         </Card.Title>
       </Card.Header>
       <Card.Body>
-        <RadioCardGroup.Root value={light} onValueChange={handleValueChange} disabled={disabled}>
-          <Grid gridTemplateColumns="1fr 1fr" gap="2">
-            {lightChoices.map((item) => (
-              <RadioCardGroup.Item
-                {...getColorPaletteProps(item.value)}
-                bg={{ _checked: "colorPalette.2" }}
-                color={{ _checked: "colorPalette.12" }}
-                key={item.value}
-                value={item.value}
-                gridColumn={item.value === LightState.OFF ? "1 / -1" : "span 1"}
-              >
-                <RadioCardGroup.ItemHiddenInput />
-                <RadioCardGroup.ItemText>{item.title}</RadioCardGroup.ItemText>
-                <RadioCardGroup.ItemControl />
-              </RadioCardGroup.Item>
-            ))}
-          </Grid>
-        </RadioCardGroup.Root>
+        <Select.Default
+          label="Color"
+          collection={lightCollection}
+          disabled={disabled}
+          value={[String(light)]}
+          onValueChange={handleValueChange}
+        >
+          {lightCollection.items.map((item) => (
+            <Select.Item key={item.value} item={item}>
+              <Select.ItemText>{item.label}</Select.ItemText>
+              <Select.ItemIndicator />
+            </Select.Item>
+          ))}
+        </Select.Default>
       </Card.Body>
+      <Card.Footer>
+        <Button variant="outline">Turn off</Button>
+        <Button>Apply</Button>
+      </Card.Footer>
     </Card.Root>
   );
 }

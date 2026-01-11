@@ -32,3 +32,11 @@ export async function shutdown(hub: Hub) {
     }
   }
 }
+
+export async function enterPasteMode(hub: Hub) {
+  await writeStdinWithResponse(hub, "\x05\r\n");
+}
+
+export async function exitPasteMode(hub: Hub) {
+  await writeStdinWithResponse(hub, "\x04\r\n");
+}

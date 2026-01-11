@@ -1,4 +1,5 @@
-import { Badge, Card, Heading } from "@/components/ui";
+import { Card, Heading, Switch } from "@/components/ui";
+import { SwitchCheckedChangeDetails } from "@ark-ui/react";
 import type { QueryClient } from "@tanstack/react-query";
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import { styled } from "styled-system/jsx";
@@ -41,6 +42,16 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 function RootComponent() {
   const { testing } = Route.useSearch();
 
+  async function setMode(details: SwitchCheckedChangeDetails) {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (details.checked) {
+      searchParams.set("testing", "true");
+    } else {
+      searchParams.delete("testing");
+    }
+    window.location.search = searchParams.toString();
+  }
+
   return (
     <styled.div mx="auto" bg="gray.2" minH="dvh" display="grid" gridTemplateRows="auto 1fr">
       <styled.header
@@ -56,11 +67,13 @@ function RootComponent() {
         gap="3"
       >
         <Heading>LEGO Control Center</Heading>
-        {testing && (
-          <Badge size="lg" colorPalette="[green]">
-            Testing Mode
-          </Badge>
-        )}
+        <Switch.Root checked={testing || false} onCheckedChange={setMode} size="xs" colorPalette="green" cursor="pointer">
+          <Switch.Control>
+            <Switch.Thumb />
+          </Switch.Control>
+          <Switch.Label>Testing mode</Switch.Label>
+          <Switch.HiddenInput />
+        </Switch.Root>
       </styled.header>
 
       <Outlet />
