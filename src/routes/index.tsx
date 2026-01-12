@@ -1,15 +1,13 @@
-import { Badge, Button, Card, Group, Heading, Icon, ScrollArea, SegmentGroup, Select, Table, Text } from "@/components/ui";
+import { Badge, Button, Card, Group, Heading, Icon, ScrollArea, Select, Table, Text } from "@/components/ui";
 import { ValueChangeDetails } from "@/components/ui/select";
-import { AnyEvent } from "@/lib/events/types";
 import { enterPasteMode, exitPasteMode, writeStdinWithResponse } from "@/lib/hubs/actions";
 import { HubsProvider } from "@/lib/hubs/context";
 import { useHub, useHubActions, useHubs, useVirtualHub, useVirtualHubActions, useVirtualHubs } from "@/lib/hubs/hooks";
 import { Hub, HubStatus } from "@/lib/hubs/types";
-import { EventType } from "@/lib/pybricks/protocol";
-import { createListCollection } from "@ark-ui/react";
+import { createListCollection, useScrollArea } from "@ark-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BluetoothIcon, BracesIcon, LightbulbIcon, RadioIcon } from "lucide-react";
-import React, { useCallback, useState } from "react";
+import { BluetoothIcon, BracesIcon, LightbulbIcon, TerminalIcon } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { css, Styles } from "styled-system/css";
 import { Box, styled } from "styled-system/jsx";
 import z from "zod";
@@ -63,21 +61,15 @@ export function Columns() {
 }
 
 function HubColumn({ hubId }: { hubId: Hub["id"] }) {
-  const [events, setEvents] = useState<AnyEvent[]>([]);
-
-  const handleEvent = useCallback((event: AnyEvent) => {
-    setEvents((prev) => [...prev.slice(-1000), event]);
-  }, []);
-
   const { testing } = Route.useSearch();
 
-  const { hub } = testing ? useVirtualHub(hubId, { onEvent: handleEvent }) : useHub(hubId, { onEvent: handleEvent });
+  const { hub, stdout } = testing ? useVirtualHub(hubId) : useHub(hubId);
   const { disconnectHub, shutdownHub } = testing ? useVirtualHubActions(hubId) : useHubActions(hubId);
 
   return (
     <styled.div display="flex" flexDirection="column" gap="4">
       <DetailsCard hub={hub} disconnectHub={disconnectHub} shutdownHub={shutdownHub} />
-      <EventsCard events={events} />
+      <StdoutCard stdout={stdout} />
       <LightCard hub={hub} />
       <DemoCard hub={hub} />
     </styled.div>
@@ -229,89 +221,44 @@ say_hi()`;
   );
 }
 
-function EventsCard({ events }: { events: AnyEvent[] }) {
-  const [eventType, setEventType] = useState<"status" | "stdout">("stdout");
+function StdoutCard({ stdout }: { stdout: string }) {
+  const lines = stdout.split(/\r?\n/);
+  const scrollArea = useScrollArea();
 
-  const eventTypes = {
-    status: (event: AnyEvent) => event.type === EventType.StatusReport,
-    stdout: (event: AnyEvent) => event.type === EventType.WriteStdout,
-  };
+  // @ts-expect-error
+  window.scrollArea = scrollArea;
 
-  const tableEvents = [...events].filter((event) => {
-    return eventTypes[eventType](event);
-  });
-
-  const items = [
-    { label: "Status Report", value: "status" },
-    { label: "Write Stdout", value: "stdout" },
-  ];
+  useEffect(() => {
+    scrollArea.scrollToEdge({ edge: "bottom" });
+  }, [stdout]);
 
   return (
     <Card.Root>
       <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
         <Card.Title display="flex" alignItems="center" gap="2">
           <Icon size="md">
-            <RadioIcon />
+            <TerminalIcon />
           </Icon>
-          Events
+          Stdout
         </Card.Title>
       </Card.Header>
       <Card.Body display="block">
-        <SegmentGroup.Root fitted mb="4" value={eventType} onValueChange={(details) => setEventType(details.value as typeof eventType)}>
-          <SegmentGroup.Indicator />
-          <SegmentGroup.Items items={items} />
-        </SegmentGroup.Root>
-        {tableEvents.length === 0 ? <EmptyState description="No events yet." /> : <EventsTable events={tableEvents} />}
+        {stdout.length === 0 ? (
+          <EmptyState description="No output yet." />
+        ) : (
+          <ScrollArea.Default value={scrollArea} size="xs" maxH="64" scrollbar="visible">
+            <styled.pre fontSize="xs" fontFamily="mono" whiteSpace="pre-wrap" wordBreak="break-all" p="2" bg="gray.2" borderRadius="l1">
+              {lines.map((line, i) => (
+                <React.Fragment key={i}>
+                  {line}
+                  {i < lines.length - 1 && <br />}
+                </React.Fragment>
+              ))}
+            </styled.pre>
+          </ScrollArea.Default>
+        )}
       </Card.Body>
     </Card.Root>
-  );
-}
-
-function EventsTable({ events }: { events: AnyEvent[] }) {
-  return (
-    <ScrollArea.Default size="xs" maxH="64" scrollbar="visible">
-      <Table.Root variant="surface">
-        <Table.Head>
-          <Table.Row>
-            <Table.Header position="sticky" top="0" zIndex="docked">
-              Timestamp
-            </Table.Header>
-            <Table.Header position="sticky" top="0" zIndex="docked">
-              Attributes
-            </Table.Header>
-          </Table.Row>
-        </Table.Head>
-        <Table.Body>
-          {events.map((event, i) => (
-            <EventsTableRow key={i} event={event} />
-          ))}
-        </Table.Body>
-      </Table.Root>
-    </ScrollArea.Default>
-  );
-}
-
-function getEventAttributes(event: AnyEvent): string {
-  const { type, receivedAt, ...rest } = event;
-  return JSON.stringify(rest);
-}
-
-function EventsTableRow({ event }: { event: AnyEvent }) {
-  const formatter = new Intl.DateTimeFormat(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-
-  return (
-    <Table.Row verticalAlign="top">
-      <Table.Cell>{formatter.format(event.receivedAt)}</Table.Cell>
-      <Table.Cell>
-        <styled.code fontSize="xs" whiteSpace="pre-wrap">
-          {getEventAttributes(event)}
-        </styled.code>
-      </Table.Cell>
-    </Table.Row>
   );
 }
 

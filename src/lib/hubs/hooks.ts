@@ -1,12 +1,12 @@
 import { parseNotification } from "@/lib/events/parsing";
-import { EventHandler, StatusReportEvent, WriteStdoutEvent } from "@/lib/events/types";
+import { StatusReportEvent } from "@/lib/events/types";
 import { disconnect, shutdown } from "@/lib/hubs/actions";
 import { HubsContext } from "@/lib/hubs/context";
 import { Hub, HubStatus } from "@/lib/hubs/types";
 import { getPybricksControlCharacteristic, startReplUserProgram } from "@/lib/pybricks/commands";
 import { requestDeviceOptions } from "@/lib/pybricks/constants";
 import { EventType } from "@/lib/pybricks/protocol";
-import { useCallback, useContext, useEffect, useRef } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { getCapabilities } from "../device/utils";
 import { delay } from "../utils";
 
@@ -77,9 +77,9 @@ export function useVirtualHubs(): ReturnType<typeof useHubs> {
   return { hubIds, connect };
 }
 
-export function useHub(id: Hub["id"], options?: { onEvent?: EventHandler }) {
-  const { onEvent } = options ?? {};
+export function useHub(id: Hub["id"]) {
   const { getHub, updateHubStatusFlags } = useHubsContext();
+  const [stdout, setStdout] = useState("");
 
   const hub = getHub(id);
   const unsubscribeRef = useRef<null | (() => Promise<void>)>(null);
@@ -88,7 +88,7 @@ export function useHub(id: Hub["id"], options?: { onEvent?: EventHandler }) {
     let active = true;
 
     async function setupNotifications() {
-      if (!hub || hub.status !== HubStatus.Ready || !onEvent) return;
+      if (!hub || hub.status !== HubStatus.Ready) return;
 
       try {
         const controlCharacteristic = await getPybricksControlCharacteristic(hub.device);
@@ -104,7 +104,9 @@ export function useHub(id: Hub["id"], options?: { onEvent?: EventHandler }) {
               updateHubStatusFlags(id, event.flags);
             }
 
-            onEvent(event);
+            if (event.type === EventType.WriteStdout) {
+              setStdout((prev) => (prev + event.message).slice(-1000));
+            }
           }
         };
 
@@ -138,22 +140,20 @@ export function useHub(id: Hub["id"], options?: { onEvent?: EventHandler }) {
       unsubscribeRef.current = null;
       if (unsubscribe) void unsubscribe();
     };
-  }, [hub?.id, hub?.status, onEvent]);
+  }, [hub?.id, hub?.status]);
 
-  return { hub } as const;
+  return { hub, stdout } as const;
 }
 
-export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler }): ReturnType<typeof useHub> {
-  const { onEvent } = options ?? {};
+export function useVirtualHub(id: Hub["id"]): ReturnType<typeof useHub> {
   const { getHub, updateHubStatusFlags } = useHubsContext();
+  const [stdout, setStdout] = useState("");
   const hub = getHub(id);
 
   useEffect(() => {
-    if (!hub || hub.status !== HubStatus.Ready || !onEvent) return;
+    if (!hub || hub.status !== HubStatus.Ready) return;
 
     async function emitVirtualEvents() {
-      if (!onEvent) return;
-
       await delay(100);
 
       const statusEvent1: StatusReportEvent = {
@@ -165,17 +165,10 @@ export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler 
       };
 
       updateHubStatusFlags(id, statusEvent1.flags);
-      onEvent(statusEvent1);
 
       await delay(50);
 
-      const stdoutEvent1: WriteStdoutEvent = {
-        type: EventType.WriteStdout,
-        message: "Virtual Hub initialized\r\n",
-        receivedAt: new Date(),
-      };
-
-      onEvent(stdoutEvent1);
+      setStdout((prev) => (prev + "Virtual Hub initialized\r\n").slice(-1000));
 
       await delay(100);
 
@@ -188,33 +181,20 @@ export function useVirtualHub(id: Hub["id"], options?: { onEvent?: EventHandler 
       };
 
       updateHubStatusFlags(id, statusEvent2.flags);
-      onEvent(statusEvent2);
 
       await delay(50);
 
-      const stdoutEvent2: WriteStdoutEvent = {
-        type: EventType.WriteStdout,
-        message: ">>> ",
-        receivedAt: new Date(),
-      };
-
-      onEvent(stdoutEvent2);
+      setStdout((prev) => (prev + ">>> ").slice(-1000));
 
       await delay(500);
 
-      const stdoutEvent3: WriteStdoutEvent = {
-        type: EventType.WriteStdout,
-        message: "print('Hello from Virtual Hub!')\r\nHello from Virtual Hub!\r\n>>> ",
-        receivedAt: new Date(),
-      };
-
-      onEvent(stdoutEvent3);
+      setStdout((prev) => (prev + "print('Hello from Virtual Hub!')\r\nHello from Virtual Hub!\r\n>>> ").slice(-1000));
     }
 
     emitVirtualEvents();
-  }, [hub?.id, hub?.status, onEvent]);
+  }, [hub?.id, hub?.status]);
 
-  return { hub } as const;
+  return { hub, stdout } as const;
 }
 
 export function useHubActions(id: Hub["id"]) {

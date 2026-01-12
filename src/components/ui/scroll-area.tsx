@@ -1,5 +1,5 @@
 "use client";
-import { ScrollArea } from "@ark-ui/react/scroll-area";
+import { ScrollArea, useScrollArea } from "@ark-ui/react/scroll-area";
 import type { ComponentProps } from "react";
 import { createStyleContext } from "styled-system/jsx";
 import { scrollArea } from "styled-system/recipes";
@@ -10,7 +10,7 @@ export type RootProps = ComponentProps<typeof Root>;
 export type ContentProps = ComponentProps<typeof Content>;
 
 export const Root = withProvider(ScrollArea.Root, "root");
-export const RootProvider = withProvider(ScrollArea.Root, "root");
+export const RootProvider = withProvider(ScrollArea.RootProvider, "root");
 export const Content = withContext(ScrollArea.Content, "content");
 export const Corner = withContext(ScrollArea.Corner, "corner");
 export const Thumb = withContext(ScrollArea.Thumb, "thumb");
@@ -21,9 +21,11 @@ export const Viewport = withContext(ScrollArea.Viewport, "viewport");
 
 export { ScrollAreaContext as Context } from "@ark-ui/react/scroll-area";
 
-export function Default({ children, ...props }: RootProps) {
+export function Default({ children, value, ...props }: ComponentProps<typeof RootProvider> & { value?: ReturnType<typeof useScrollArea> }) {
+  const scrollArea = value ?? useScrollArea();
+
   return (
-    <Root {...props}>
+    <RootProvider value={scrollArea} {...props}>
       <Viewport>
         <Content>{children}</Content>
       </Viewport>
@@ -31,6 +33,6 @@ export function Default({ children, ...props }: RootProps) {
         <Thumb />
       </Scrollbar>
       <Corner />
-    </Root>
+    </RootProvider>
   );
 }
