@@ -87,3 +87,17 @@ export async function enterPasteMode(hub: Hub) {
 export async function exitPasteMode(hub: Hub) {
   await writeStdinWithResponse(hub, "\x04\r\n");
 }
+
+/**
+ * Virtual hub disconnect - simulates disconnect with delay
+ */
+export async function virtualDisconnect() {
+  await new Promise((resolve) => setTimeout(resolve, 150));
+}
+
+/**
+ * Virtual hub shutdown - simulates shutdown with delay
+ */
+export async function virtualHubShutdown() {
+  await new Promise((resolve) => setTimeout(resolve, 150));
+}

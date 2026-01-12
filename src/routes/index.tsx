@@ -1,14 +1,22 @@
 import { Badge, Button, Card, Group, Heading, Icon, ScrollArea, Select, Table, Text } from "@/components/ui";
 import { ValueChangeDetails } from "@/components/ui/select";
-import { enterPasteMode, exitPasteMode, writeStdinWithResponse } from "@/lib/hubs/actions";
+import {
+  disconnect,
+  enterPasteMode,
+  exitPasteMode,
+  hubShutdown,
+  virtualDisconnect,
+  virtualHubShutdown,
+  writeStdinWithResponse,
+} from "@/lib/hubs/actions";
 import { HubsProvider } from "@/lib/hubs/context";
-import { useHub, useHubActions, useHubs, useVirtualHub, useVirtualHubActions, useVirtualHubs } from "@/lib/hubs/hooks";
+import { useHub, useHubs, useHubsContext, useVirtualHub, useVirtualHubs } from "@/lib/hubs/hooks";
 import { Hub, HubStatus } from "@/lib/hubs/types";
 import { TelemetryEvent } from "@/lib/telemetry/types";
 import { createListCollection, useScrollArea } from "@ark-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { BluetoothIcon, BracesIcon, LightbulbIcon, RadioTowerIcon, TerminalIcon } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { css, Styles } from "styled-system/css";
 import { Box, styled } from "styled-system/jsx";
 import z from "zod";
@@ -65,11 +73,10 @@ function HubColumn({ hubId }: { hubId: Hub["id"] }) {
   const { testing } = Route.useSearch();
 
   const { hub, terminalLines, telemetryEvents } = testing ? useVirtualHub(hubId) : useHub(hubId);
-  const { disconnectHub, shutdownHub } = testing ? useVirtualHubActions(hubId) : useHubActions(hubId);
 
   return (
     <styled.div display="flex" flexDirection="column" gap="4">
-      <DetailsCard hub={hub} disconnectHub={disconnectHub} shutdownHub={shutdownHub} />
+      <DetailsCard hub={hub} />
       <TerminalCard terminalLines={terminalLines} />
       <TelemetryCard telemetryEvents={telemetryEvents} />
       <LightCard hub={hub} />
@@ -135,8 +142,6 @@ function getStatusBadge(status: HubStatus) {
       return <Badge colorPalette="[warning]">Uploading program...</Badge>;
     case HubStatus.StartingProgram:
       return <Badge colorPalette="[warning]">Starting program...</Badge>;
-    case HubStatus.Disconnected:
-      return <Badge colorPalette="[danger]">Disconnected</Badge>;
     case HubStatus.Error:
       return <Badge colorPalette="[danger]">Error</Badge>;
     default:
@@ -144,26 +149,30 @@ function getStatusBadge(status: HubStatus) {
   }
 }
 
-function DetailsCard({
-  hub,
-  disconnectHub,
-  shutdownHub,
-}: {
-  hub: Hub;
-  disconnectHub: () => Promise<void>;
-  shutdownHub: () => Promise<void>;
-}) {
+function DetailsCard({ hub }: { hub: Hub }) {
+  const { testing } = Route.useSearch();
+  const { removeHub } = useHubsContext();
   const isReady = hub.status === HubStatus.Ready;
+
+  const handleDisconnect = useCallback(async () => {
+    await (testing ? virtualDisconnect() : disconnect(hub));
+    removeHub(hub.id);
+  }, [hub, removeHub, testing]);
+
+  const handleShutdown = useCallback(async () => {
+    await (testing ? virtualHubShutdown() : hubShutdown(hub));
+    removeHub(hub.id);
+  }, [hub, removeHub, testing]);
 
   return (
     <Card.Root>
       <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
         <Card.Title>{hub.name}</Card.Title>
         <Group attached>
-          <Button size="xs" variant="surface" colorPalette="[danger]" onClick={shutdownHub} disabled={!isReady}>
+          <Button size="xs" variant="surface" colorPalette="[danger]" onClick={handleShutdown} disabled={!isReady}>
             Shutdown
           </Button>
-          <Button size="xs" variant="surface" onClick={disconnectHub}>
+          <Button size="xs" variant="surface" onClick={handleDisconnect}>
             Disconnect
           </Button>
         </Group>

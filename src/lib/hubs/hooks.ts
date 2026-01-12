@@ -1,6 +1,6 @@
 import { parseNotification } from "@/lib/events/parsing";
 import { StatusReportEvent } from "@/lib/events/types";
-import { disconnect, enterPasteMode, exitPasteMode, hubShutdown, writeStdinWithResponse } from "@/lib/hubs/actions";
+import { enterPasteMode, exitPasteMode, writeStdinWithResponse } from "@/lib/hubs/actions";
 import { HubsContext } from "@/lib/hubs/context";
 import { programMain, programRun } from "@/lib/hubs/program";
 import { Hub, HubStatus } from "@/lib/hubs/types";
@@ -222,13 +222,12 @@ export function useVirtualHub(id: Hub["id"]): ReturnType<typeof useHub> {
 
       setTerminalLines((prev) => [...prev, ">>> "]);
 
-      await delay(500);
+      await delay(200);
 
       setTerminalLines((prev) => [...prev, "print('Hello from Virtual Hub!')", "Hello from Virtual Hub!", ">>> "]);
 
-      // Emit mock telemetry events
-      for (let i = 0; i < 20; i++) {
-        await delay(500);
+      for (let i = 0; i < 12; i++) {
+        await delay(200);
         const telemetryEvent: TelemetryEvent = {
           time: i * 500,
           hubBattery: Math.max(20, 100 - i * 2),
@@ -246,43 +245,7 @@ export function useVirtualHub(id: Hub["id"]): ReturnType<typeof useHub> {
   return { hub, terminalLines, telemetryEvents } as const;
 }
 
-export function useHubActions(id: Hub["id"]) {
-  const { getHub, removeHub } = useHubsContext();
-
-  const disconnectHub = useCallback(async () => {
-    const hub = getHub(id);
-    await disconnect(hub);
-    removeHub(id);
-  }, [id, getHub, removeHub]);
-
-  const shutdownHub = useCallback(async () => {
-    const hub = getHub(id);
-    await hubShutdown(hub);
-    removeHub(id);
-  }, [id, getHub, removeHub]);
-
-  return { disconnectHub, shutdownHub };
-}
-
-export function useVirtualHubActions(id: Hub["id"]): ReturnType<typeof useHubActions> {
-  const { removeHub, updateHubStatus } = useHubsContext();
-
-  const disconnectHub = useCallback(async () => {
-    updateHubStatus(id, HubStatus.Disconnected);
-    await delay(200);
-    removeHub(id);
-  }, [id, removeHub, updateHubStatus]);
-
-  const shutdownHub = useCallback(async () => {
-    updateHubStatus(id, HubStatus.Disconnected);
-    await delay(300);
-    removeHub(id);
-  }, [id, removeHub, updateHubStatus]);
-
-  return { disconnectHub, shutdownHub } as const;
-}
-
-function useHubsContext() {
+export function useHubsContext() {
   const value = useContext(HubsContext);
   if (!value) throw new Error("HubsContext missing");
   return value;

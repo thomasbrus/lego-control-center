@@ -22,7 +22,6 @@ export enum HubStatus {
   UploadingProgram = "uploading-program",
   StartingProgram = "starting-program",
   Ready = "ready",
-  Disconnected = "disconnected",
   Error = "error",
 }
 
