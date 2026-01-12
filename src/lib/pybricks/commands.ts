@@ -1,7 +1,13 @@
 import { assertConnected } from "@/lib/device/utils";
 import { encodeMessage } from "@/lib/messages/encoding";
 import { pybricksControlCharacteristicUUID, pybricksServiceUUID } from "./constants";
-import { BuiltinProgramId, createStartUserProgramCommand, createStopUserProgramCommand, createWriteStdinCommand } from "./protocol";
+import {
+  BuiltinProgramId,
+  createStartUserProgramCommand,
+  createStopUserProgramCommand,
+  createWriteAppDataCommand,
+  createWriteStdinCommand,
+} from "./protocol";
 
 async function getPybricksService(device: BluetoothDevice) {
   assertConnected(device);
@@ -22,6 +28,29 @@ export function createWriteStdinCommands(message: string, maxWriteSize: number) 
   for (let offset = 0; offset < data.length; offset += maxPayloadSize) {
     const chunk = data.slice(offset, offset + maxPayloadSize);
     const command = createWriteStdinCommand(chunk.buffer);
+    commands.push(command);
+  }
+
+  return commands;
+}
+
+/**
+ * Creates commands to write binary data to the hub's AppData buffer.
+ * Unlike stdin, AppData is binary and uses an offset-based protocol.
+ * @param data The binary data to write
+ * @param maxWriteSize Maximum bytes per BLE write (from hub capabilities)
+ * @param offset Starting offset in the AppData buffer (default 0)
+ */
+export function createWriteAppDataCommands(data: ArrayBuffer, maxWriteSize: number, offset: number = 0): Uint8Array<ArrayBuffer>[] {
+  // AppData command: 1 byte command + 2 bytes offset + payload
+  const headerSize = 3;
+  const maxPayloadSize = maxWriteSize - headerSize;
+  const commands: Uint8Array<ArrayBuffer>[] = [];
+
+  for (let i = 0; i < data.byteLength; i += maxPayloadSize) {
+    const chunk = data.slice(i, i + maxPayloadSize);
+    const currentOffset = offset + i;
+    const command = createWriteAppDataCommand(currentOffset, chunk);
     commands.push(command);
   }
 

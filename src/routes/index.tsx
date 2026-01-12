@@ -129,6 +129,10 @@ function getStatusBadge(status: HubStatus) {
       return <Badge colorPalette="[warning]">Retrieving capabilities...</Badge>;
     case HubStatus.StartingRepl:
       return <Badge colorPalette="[warning]">Starting REPL...</Badge>;
+    case HubStatus.UploadingProgram:
+      return <Badge colorPalette="[warning]">Uploading program...</Badge>;
+    case HubStatus.StartingProgram:
+      return <Badge colorPalette="[warning]">Starting program...</Badge>;
     case HubStatus.Disconnected:
       return <Badge colorPalette="[danger]">Disconnected</Badge>;
     case HubStatus.Error:
@@ -311,8 +315,10 @@ function LightCard({ hub }: { hub: Hub }) {
         </Select.Default>
       </Card.Body>
       <Card.Footer>
-        <Button variant="outline">Turn off</Button>
-        <Button>Apply</Button>
+        <Button disabled={disabled} variant="outline">
+          Turn off
+        </Button>
+        <Button disabled={disabled}>Apply</Button>
       </Card.Footer>
     </Card.Root>
   );

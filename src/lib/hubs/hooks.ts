@@ -1,7 +1,8 @@
 import { parseNotification } from "@/lib/events/parsing";
 import { StatusReportEvent } from "@/lib/events/types";
-import { disconnect, shutdown } from "@/lib/hubs/actions";
+import { disconnect, enterPasteMode, exitPasteMode, hubShutdown, writeStdinWithResponse } from "@/lib/hubs/actions";
 import { HubsContext } from "@/lib/hubs/context";
+import { programMain, programRun } from "@/lib/hubs/program.";
 import { Hub, HubStatus } from "@/lib/hubs/types";
 import { getPybricksControlCharacteristic, startReplUserProgram } from "@/lib/pybricks/commands";
 import { requestDeviceOptions } from "@/lib/pybricks/constants";
@@ -31,6 +32,20 @@ export function useHubs() {
       updateHubStatus(device.id, HubStatus.StartingRepl);
 
       await startReplUserProgram(device);
+
+      // Create a temporary hub object with capabilities for writeStdinWithResponse
+      const hubWithCapabilities: Hub = { ...hub, status: HubStatus.UploadingProgram, capabilities };
+      updateHubStatus(device.id, HubStatus.UploadingProgram);
+
+      // Enter paste mode, upload program, exit paste mode
+      await enterPasteMode(hubWithCapabilities);
+      await writeStdinWithResponse(hubWithCapabilities, programMain);
+      await exitPasteMode(hubWithCapabilities);
+
+      // Run the program
+      updateHubStatus(device.id, HubStatus.StartingProgram);
+      await writeStdinWithResponse(hubWithCapabilities, programRun);
+
       const connectedHub: Hub = { ...hub, status: HubStatus.Ready, capabilities };
 
       addHub(connectedHub);
@@ -67,6 +82,12 @@ export function useVirtualHubs(): ReturnType<typeof useHubs> {
 
     await delay(50);
     updateHubStatus(id, HubStatus.StartingRepl);
+
+    await delay(100);
+    updateHubStatus(id, HubStatus.UploadingProgram);
+
+    await delay(200);
+    updateHubStatus(id, HubStatus.StartingProgram);
 
     await delay(100);
     updateHubStatus(id, HubStatus.Ready);
@@ -208,7 +229,7 @@ export function useHubActions(id: Hub["id"]) {
 
   const shutdownHub = useCallback(async () => {
     const hub = getHub(id);
-    await shutdown(hub);
+    await hubShutdown(hub);
     removeHub(id);
   }, [id, getHub, removeHub]);
 
