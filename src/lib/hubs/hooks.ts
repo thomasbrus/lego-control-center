@@ -2,11 +2,13 @@ import { parseNotification } from "@/lib/events/parsing";
 import { StatusReportEvent } from "@/lib/events/types";
 import { disconnect, enterPasteMode, exitPasteMode, hubShutdown, writeStdinWithResponse } from "@/lib/hubs/actions";
 import { HubsContext } from "@/lib/hubs/context";
-import { programMain, programRun } from "@/lib/hubs/program.";
+import { programMain, programRun } from "@/lib/hubs/program";
 import { Hub, HubStatus } from "@/lib/hubs/types";
 import { getPybricksControlCharacteristic, startReplUserProgram } from "@/lib/pybricks/commands";
 import { requestDeviceOptions } from "@/lib/pybricks/constants";
 import { EventType } from "@/lib/pybricks/protocol";
+import { parseTelemetryEvent } from "@/lib/telemetry/parsing";
+import { TelemetryEvent } from "@/lib/telemetry/types";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { getCapabilities } from "../device/utils";
 import { delay } from "../utils";
@@ -101,6 +103,7 @@ export function useVirtualHubs(): ReturnType<typeof useHubs> {
 export function useHub(id: Hub["id"]) {
   const { getHub, updateHubStatusFlags } = useHubsContext();
   const [stdout, setStdout] = useState("");
+  const [telemetryEvents, setTelemetryEvents] = useState<TelemetryEvent[]>([]);
 
   const hub = getHub(id);
   const unsubscribeRef = useRef<null | (() => Promise<void>)>(null);
@@ -127,6 +130,15 @@ export function useHub(id: Hub["id"]) {
 
             if (event.type === EventType.WriteStdout) {
               setStdout((prev) => (prev + event.message).slice(-1000));
+            }
+
+            if (event.type === EventType.WriteAppData) {
+              try {
+                const telemetryEvent = parseTelemetryEvent(event.data);
+                setTelemetryEvents((prev) => [...prev, telemetryEvent].slice(-100));
+              } catch (error) {
+                console.error("Failed to parse telemetry event:", error);
+              }
             }
           }
         };
@@ -163,12 +175,15 @@ export function useHub(id: Hub["id"]) {
     };
   }, [hub?.id, hub?.status]);
 
-  return { hub, stdout } as const;
+  const terminalLines = stdout.split(/\r?\n/);
+
+  return { hub, terminalLines, telemetryEvents } as const;
 }
 
 export function useVirtualHub(id: Hub["id"]): ReturnType<typeof useHub> {
   const { getHub, updateHubStatusFlags } = useHubsContext();
-  const [stdout, setStdout] = useState("");
+  const [terminalLines, setTerminalLines] = useState<string[]>([]);
+  const [telemetryEvents, setTelemetryEvents] = useState<TelemetryEvent[]>([]);
   const hub = getHub(id);
 
   useEffect(() => {
@@ -189,7 +204,7 @@ export function useVirtualHub(id: Hub["id"]): ReturnType<typeof useHub> {
 
       await delay(50);
 
-      setStdout((prev) => (prev + "Virtual Hub initialized\r\n").slice(-1000));
+      setTerminalLines((prev) => [...prev, "Virtual Hub initialized"]);
 
       await delay(100);
 
@@ -205,17 +220,30 @@ export function useVirtualHub(id: Hub["id"]): ReturnType<typeof useHub> {
 
       await delay(50);
 
-      setStdout((prev) => (prev + ">>> ").slice(-1000));
+      setTerminalLines((prev) => [...prev, ">>> "]);
 
       await delay(500);
 
-      setStdout((prev) => (prev + "print('Hello from Virtual Hub!')\r\nHello from Virtual Hub!\r\n>>> ").slice(-1000));
+      setTerminalLines((prev) => [...prev, "print('Hello from Virtual Hub!')", "Hello from Virtual Hub!", ">>> "]);
+
+      // Emit mock telemetry events
+      for (let i = 0; i < 20; i++) {
+        await delay(500);
+        const telemetryEvent: TelemetryEvent = {
+          time: i * 500,
+          hubBattery: Math.max(20, 100 - i * 2),
+          motorAngles: [i * 10, i * 15, i * 12, i * 8],
+          motorSpeeds: [100 + i * 5, 120 + i * 3, 110 + i * 4, 90 + i * 6],
+          lightStatus: i % 10,
+        };
+        setTelemetryEvents((prev) => [...prev, telemetryEvent].slice(-100));
+      }
     }
 
     emitVirtualEvents();
   }, [hub?.id, hub?.status]);
 
-  return { hub, stdout } as const;
+  return { hub, terminalLines, telemetryEvents } as const;
 }
 
 export function useHubActions(id: Hub["id"]) {

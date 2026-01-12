@@ -4,9 +4,10 @@ import { enterPasteMode, exitPasteMode, writeStdinWithResponse } from "@/lib/hub
 import { HubsProvider } from "@/lib/hubs/context";
 import { useHub, useHubActions, useHubs, useVirtualHub, useVirtualHubActions, useVirtualHubs } from "@/lib/hubs/hooks";
 import { Hub, HubStatus } from "@/lib/hubs/types";
+import { TelemetryEvent } from "@/lib/telemetry/types";
 import { createListCollection, useScrollArea } from "@ark-ui/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { BluetoothIcon, BracesIcon, LightbulbIcon, TerminalIcon } from "lucide-react";
+import { BluetoothIcon, BracesIcon, LightbulbIcon, RadioTowerIcon, TerminalIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { css, Styles } from "styled-system/css";
 import { Box, styled } from "styled-system/jsx";
@@ -63,13 +64,14 @@ export function Columns() {
 function HubColumn({ hubId }: { hubId: Hub["id"] }) {
   const { testing } = Route.useSearch();
 
-  const { hub, stdout } = testing ? useVirtualHub(hubId) : useHub(hubId);
+  const { hub, terminalLines, telemetryEvents } = testing ? useVirtualHub(hubId) : useHub(hubId);
   const { disconnectHub, shutdownHub } = testing ? useVirtualHubActions(hubId) : useHubActions(hubId);
 
   return (
     <styled.div display="flex" flexDirection="column" gap="4">
       <DetailsCard hub={hub} disconnectHub={disconnectHub} shutdownHub={shutdownHub} />
-      <StdoutCard stdout={stdout} />
+      <TerminalCard terminalLines={terminalLines} />
+      <TelemetryCard telemetryEvents={telemetryEvents} />
       <LightCard hub={hub} />
       <DemoCard hub={hub} />
     </styled.div>
@@ -225,16 +227,12 @@ say_hi()`;
   );
 }
 
-function StdoutCard({ stdout }: { stdout: string }) {
-  const lines = stdout.split(/\r?\n/);
+function TerminalCard({ terminalLines }: { terminalLines: string[] }) {
   const scrollArea = useScrollArea();
-
-  // @ts-expect-error
-  window.scrollArea = scrollArea;
 
   useEffect(() => {
     scrollArea.scrollToEdge({ edge: "bottom" });
-  }, [stdout]);
+  }, [terminalLines.length]);
 
   return (
     <Card.Root>
@@ -243,22 +241,73 @@ function StdoutCard({ stdout }: { stdout: string }) {
           <Icon size="md">
             <TerminalIcon />
           </Icon>
-          Stdout
+          Terminal
         </Card.Title>
       </Card.Header>
       <Card.Body display="block">
-        {stdout.length === 0 ? (
+        {terminalLines.length === 0 ? (
           <EmptyState description="No output yet." />
         ) : (
-          <ScrollArea.Default value={scrollArea} size="xs" maxH="64" scrollbar="visible">
+          <ScrollArea.Default value={scrollArea} size="xs" maxH="64">
             <styled.pre fontSize="xs" fontFamily="mono" whiteSpace="pre-wrap" wordBreak="break-all" p="2" bg="gray.2" borderRadius="l1">
-              {lines.map((line, i) => (
+              {terminalLines.map((terminalLine, i) => (
                 <React.Fragment key={i}>
-                  {line}
-                  {i < lines.length - 1 && <br />}
+                  {terminalLine}
+                  {i < terminalLines.length - 1 && <br />}
                 </React.Fragment>
               ))}
             </styled.pre>
+          </ScrollArea.Default>
+        )}
+      </Card.Body>
+    </Card.Root>
+  );
+}
+
+function TelemetryCard({ telemetryEvents }: { telemetryEvents: TelemetryEvent[] }) {
+  const scrollArea = useScrollArea();
+
+  useEffect(() => {
+    scrollArea.scrollToEdge({ edge: "bottom" });
+  }, [telemetryEvents.length]);
+
+  return (
+    <Card.Root>
+      <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
+        <Card.Title display="flex" alignItems="center" gap="2">
+          <Icon size="md">
+            <RadioTowerIcon />
+          </Icon>
+          Telemetry
+        </Card.Title>
+      </Card.Header>
+      <Card.Body display="block">
+        {telemetryEvents.length === 0 ? (
+          <EmptyState description="No telemetry data yet." />
+        ) : (
+          <ScrollArea.Default value={scrollArea} size="xs" maxH="64">
+            <Table.Root variant="surface">
+              <Table.Head>
+                <Table.Row>
+                  <Table.Header>Time</Table.Header>
+                  <Table.Header>Battery</Table.Header>
+                  <Table.Header>Motor Angles</Table.Header>
+                  <Table.Header>Motor Speeds</Table.Header>
+                  <Table.Header>Light</Table.Header>
+                </Table.Row>
+              </Table.Head>
+              <Table.Body>
+                {telemetryEvents.map((event, index) => (
+                  <Table.Row key={index}>
+                    <Table.Cell>{(event.time / 1000).toFixed(1)}s</Table.Cell>
+                    <Table.Cell>{event.hubBattery}%</Table.Cell>
+                    <Table.Cell fontSize="xs">{event.motorAngles.join(", ")}</Table.Cell>
+                    <Table.Cell fontSize="xs">{event.motorSpeeds.join(", ")}</Table.Cell>
+                    <Table.Cell>{event.lightStatus}</Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table.Root>
           </ScrollArea.Default>
         )}
       </Card.Body>

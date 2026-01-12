@@ -78,6 +78,13 @@ class MotorController:
 
         return angles, speeds
 
+# Global instances for shared state
+motor_controller = MotorController([Port.A, Port.B, Port.C, Port.D])
+light_manager = LightManager(hub)
+battery_monitor = BatteryMonitor(hub)
+
+# AppData for bidirectional communication
+app_data = AppData(CommandProtocol.FORMAT)
 
 class Commands:
     HUB_SHUTDOWN        = 0x10
@@ -85,77 +92,77 @@ class Commands:
     MOTOR_STOP_ALL      = 0x21
     LIGHT_SET           = 0x30
 
-class CommandHandler:
-    def __init__(self, motor_controller, light_manager):
-        self.motor_controller = motor_controller
-        self.light_manager = light_manager
+class CommandProtocol:
+    # [CommandId(B), ...4xArgument(h)]
+    FORMAT = "<Bhhhh"
+    SIZE = ustruct.calcsize(FORMAT)
 
-    def process(self, values):
+class CommandHandler:
+    def __init__(self):
+        pass
+
+    def process_stdin(self):
+        values = ustruct.unpack(CommandProtocol.FORMAT, stdin.buffer.read(CommandProtocol.SIZE))
+        self._execute(values)
+
+    def process_app_data(self):
+        self._execute(app_data.get_values())
+
+    def _execute(self, values):
         command_id = values[0]
 
         if command_id == Commands.HUB_SHUTDOWN:
-            self.hub.system.shutdown()
+            hub.system.shutdown()
         elif command_id == Commands.MOTOR_SET_SPEEDS:
             # values[1:5] = speeds for ports A-D
-            self.motor_controller.set_speeds(values[1:])
+            motor_controller.set_speeds(values[1:])
         elif command_id == Commands.MOTOR_STOP_ALL:
-            self.motor_controller.stop_all()
+            motor_controller.stop_all()
         elif command_id == Commands.LIGHT_SET:
             # values[1] = color index (0 = NONE)
-            self.light_manager.set(values[1])
+            light_manager.set(values[1])
+
+class TelemetryProtocol:
+    # [Time(I), HubBattery(B), ...4xMotorAngle(h), ...4xMotorSpeed(h), LightStatus(B)]
+    FORMAT = "<IBhhhhhhhhB"
 
 class TelemetryCollector:
-    def __init__(self, motor_controller, light_manager, battery_monitor):
-        self.motor_controller = motor_controller
-        self.light_manager = light_manager
-        self.battery_monitor = battery_monitor
+    def __init__(self):
         self.watch = Watch()
 
     def collect(self):
-        angles, speeds = self.motor_controller.read_state()
-        battery_percentage = self.battery_monitor.percentage()
+        angles, speeds = motor_controller.read_state()
+        battery_percentage = battery_monitor.percentage()
 
-        # Pack:
-        # [Time(I), Light(B), Battery(B), 4xAngle(h), 4xSpeed(h)]
         payload = ustruct.pack(
-            "<IBBhhhhhhhh",
+            TelemetryProtocol.FORMAT,
             self.watch.time(),
-            self.light_manager.current_index,
             battery_percentage,
             *angles,
-            *speeds
+            *speeds,
+            light_manager.current_index
         )
 
         return payload
 
-class Protocol
-    # Incoming: [CmdID(B), Arg1(h), Arg2(h), Arg3(h), Arg4(h)]
-    FORMAT = "<Bhhhh"
-    SIZE = ustruct.calcsize(FORMAT)
+    async def broadcast(self):
+        await app_data.write_bytes(self.collect())
 
 class HubController:
-    def __init__(self, hub):
-        self.hub = hub
-
-        self.app_data = AppData(Protocol.FORMAT)
-        self.motor_controller = MotorController([Port.A, Port.B, Port.C, Port.D])
-        self.light_manager = LightManager(self.hub)
-        self.battery_monitor = BatteryMonitor(self.hub)
-
-        self.command_handler = CommandHandler(self.motor_controller, self.light_manager)
-        self.telemetry_collector = TelemetryCollector(self.motor_controller, self.light_manager, self.battery_monitor)
+    def __init__(self):
+        self.command_handler = CommandHandler()
+        self.telemetry_broadcaster = TelemetryCollector()
 
     def process_stdin_command(self):
-        values = ustruct.unpack(Protocol.FORMAT, stdin.buffer.read(Protocol.SIZE))
-        self.command_handler.process(values)
+        self.command_handler.process_stdin()
 
     def process_app_data_command(self):
-        self.command_handler.process(self.app_data.get_values())
+        self.command_handler.process_app_data()
 
     async def broadcast_telemetry(self):
-        await self.app_data.write_bytes(self.telemetry_collector.collect())
+        await self.telemetry_broadcaster.broadcast()
 
-hub_controller = HubController(hub)
+hub_controller = HubController()
 
 async def process_stdin_command_loop():
     while True:
