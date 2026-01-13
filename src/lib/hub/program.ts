@@ -83,9 +83,6 @@ motor_controller = MotorController([Port.A, Port.B, Port.C, Port.D])
 light_manager = LightManager(hub)
 battery_monitor = BatteryMonitor(hub)
 
-# AppData for bidirectional communication
-app_data = AppData(CommandProtocol.FORMAT)
-
 class Commands:
     HUB_SHUTDOWN        = 0x10
     MOTOR_SET_SPEEDS    = 0x20
@@ -96,6 +93,9 @@ class CommandProtocol:
     # [CommandId(B), ...4xArgument(h)]
     FORMAT = "<Bhhhh"
     SIZE = ustruct.calcsize(FORMAT)
+
+# AppData for bidirectional communication
+app_data = AppData(CommandProtocol.FORMAT)
 
 class CommandHandler:
     def __init__(self):
@@ -128,7 +128,7 @@ class TelemetryProtocol:
 
 class TelemetryCollector:
     def __init__(self):
-        self.watch = Watch()
+        self.stopWatch = StopWatch()
 
     def collect(self):
         angles, speeds = motor_controller.read_state()
@@ -136,7 +136,7 @@ class TelemetryCollector:
 
         payload = ustruct.pack(
             TelemetryProtocol.FORMAT,
-            self.watch.time(),
+            self.stopWatch.time(),
             battery_percentage,
             *angles,
             *speeds,

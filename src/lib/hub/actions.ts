@@ -1,6 +1,6 @@
+import * as HubUtils from "@/lib/hub/utils";
 import { createWriteAppDataCommands, createWriteStdinCommands, stopUserProgram, writeCommandsWithResponse } from "@/lib/pybricks/commands";
 import { Hub } from "./types";
-import { assertHubReady } from "./utils";
 
 /**
  * Command IDs for the AppData protocol.
@@ -27,18 +27,20 @@ function createCommandBuffer(commandId: number, ...args: number[]): ArrayBuffer 
   return buffer;
 }
 
-export async function disconnect({ device }: Hub) {
-  try {
-    await stopUserProgram(device);
-  } catch {
-    // Ignore errors - device may not be fully ready yet
-  } finally {
-    device.gatt?.disconnect();
+export async function disconnect(hub: Hub) {
+  if (HubUtils.isConnected(hub)) {
+    try {
+      await stopUserProgram(hub.device);
+    } catch {
+      // Ignore errors - device may not be fully ready yet
+    } finally {
+      hub.device.gatt?.disconnect();
+    }
   }
 }
 
 export async function writeStdinWithResponse(hub: Hub, message: string) {
-  assertHubReady(hub);
+  HubUtils.assertWithCapabilities(hub);
   const commands = createWriteStdinCommands(message, hub.capabilities.maxWriteSize);
   return await writeCommandsWithResponse(hub.device, commands);
 }
@@ -53,7 +55,7 @@ export async function writeStdinWithResponse(hub: Hub, message: string) {
  * @param offset Offset in the AppData buffer (default 0)
  */
 export async function writeAppData(hub: Hub, data: ArrayBuffer, offset: number = 0) {
-  assertHubReady(hub);
+  HubUtils.assertWithCapabilities(hub);
   const commands = createWriteAppDataCommands(data, hub.capabilities.maxWriteSize, offset);
   return await writeCommandsWithResponse(hub.device, commands);
 }

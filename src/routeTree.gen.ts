@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as Original_indexRouteImport } from './routes/original_index'
 import { Route as MonitorRouteImport } from './routes/monitor'
 import { Route as IndexRouteImport } from './routes/index'
 
+const Original_indexRoute = Original_indexRouteImport.update({
+  id: '/original_index',
+  path: '/original_index',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MonitorRoute = MonitorRouteImport.update({
   id: '/monitor',
   path: '/monitor',
@@ -26,31 +32,42 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/monitor': typeof MonitorRoute
+  '/original_index': typeof Original_indexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/monitor': typeof MonitorRoute
+  '/original_index': typeof Original_indexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/monitor': typeof MonitorRoute
+  '/original_index': typeof Original_indexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/monitor'
+  fullPaths: '/' | '/monitor' | '/original_index'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/monitor'
-  id: '__root__' | '/' | '/monitor'
+  to: '/' | '/monitor' | '/original_index'
+  id: '__root__' | '/' | '/monitor' | '/original_index'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MonitorRoute: typeof MonitorRoute
+  Original_indexRoute: typeof Original_indexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/original_index': {
+      id: '/original_index'
+      path: '/original_index'
+      fullPath: '/original_index'
+      preLoaderRoute: typeof Original_indexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/monitor': {
       id: '/monitor'
       path: '/monitor'
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MonitorRoute: MonitorRoute,
+  Original_indexRoute: Original_indexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

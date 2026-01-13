@@ -1,22 +1,22 @@
-import { StatusFlags } from "@/lib/events/types";
+import { ConnectedBluetoothDevice } from "../device/types";
+
+export type HubId = BluetoothDevice["id"];
 
 export interface Hub {
-  id: BluetoothDevice["id"];
-  name: BluetoothDevice["name"];
-  device: BluetoothDevice;
+  id: HubId;
+  name: string;
   status: HubStatus;
-  statusFlags?: StatusFlags;
+  device?: BluetoothDevice;
   capabilities?: HubCapabilities;
 }
 
-export type ReadyHub = Hub & {
-  status: HubStatus.Ready;
-  capabilities: HubCapabilities;
-};
+export type ConnectedHub = Hub & { device: ConnectedBluetoothDevice };
+export type WithCapabilitiesHub = ConnectedHub & { capabilities: HubCapabilities };
 
 export enum HubStatus {
   Idle = "idle",
   Connecting = "connecting",
+  Connected = "connected",
   RetrievingCapabilities = "retrieving-capabilities",
   StartingRepl = "starting-repl",
   UploadingProgram = "uploading-program",

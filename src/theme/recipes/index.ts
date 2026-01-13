@@ -1,3 +1,4 @@
+import { tabs } from "./tabs";
 import { select } from "./select";
 import { switchRecipe } from "./switch";
 import { segmentGroup } from "./segment-group";
@@ -32,6 +33,7 @@ export const recipes = {
   scrollArea,
   segmentGroup,
   switchRecipe,
-  select
+  select,
+  tabs
 }
 export const slotRecipes = {}

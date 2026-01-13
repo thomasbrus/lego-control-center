@@ -32,7 +32,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     ],
   }),
   validateSearch: z.object({
-    testing: z.boolean().optional().catch(false),
+    virtual: z.boolean().optional().catch(false),
   }),
   component: RootComponent,
   shellComponent: RootDocument,
@@ -40,20 +40,20 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 });
 
 function RootComponent() {
-  const { testing } = Route.useSearch();
+  const { virtual } = Route.useSearch();
 
-  async function setMode(details: SwitchCheckedChangeDetails) {
+  async function handleModeChange(details: SwitchCheckedChangeDetails) {
     const searchParams = new URLSearchParams(window.location.search);
     if (details.checked) {
-      searchParams.set("testing", "true");
+      searchParams.set("virtual", "true");
     } else {
-      searchParams.delete("testing");
+      searchParams.delete("virtual");
     }
     window.location.search = searchParams.toString();
   }
 
   return (
-    <styled.div mx="auto" bg="gray.2" minH="dvh" display="grid" gridTemplateRows="auto 1fr">
+    <styled.div bg="gray.2" minH="dvh">
       <styled.header
         bg="gray.surface.bg"
         p="8"
@@ -67,11 +67,11 @@ function RootComponent() {
         gap="3"
       >
         <Heading>LEGO Control Center</Heading>
-        <Switch.Root checked={testing || false} onCheckedChange={setMode} size="xs" colorPalette="green" cursor="pointer">
+        <Switch.Root checked={virtual ?? false} onCheckedChange={handleModeChange} size="xs" colorPalette="green" cursor="pointer">
           <Switch.Control>
             <Switch.Thumb />
           </Switch.Control>
-          <Switch.Label>Testing mode</Switch.Label>
+          <Switch.Label>Virtual mode</Switch.Label>
           <Switch.HiddenInput />
         </Switch.Root>
       </styled.header>

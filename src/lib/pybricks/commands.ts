@@ -21,7 +21,8 @@ export async function getPybricksControlCharacteristic(device: BluetoothDevice) 
 }
 
 export function createWriteStdinCommands(message: string, maxWriteSize: number) {
-  const maxPayloadSize = maxWriteSize - 1;
+  // The max payload size is very important to get right here.
+  const maxPayloadSize = maxWriteSize - 55;
   const data = encodeMessage(message);
   const commands: Uint8Array<ArrayBuffer>[] = [];
 

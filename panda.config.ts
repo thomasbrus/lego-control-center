@@ -88,7 +88,9 @@ export default defineConfig({
           blue: blue,
 
           primary: yellow,
+          info: blue,
           success: green,
+          warning: yellow,
           danger: red,
         },
 
