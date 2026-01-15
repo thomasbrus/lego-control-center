@@ -1,3 +1,7 @@
+export const programDemo = `
+print("Hello world!")
+`;
+
 export const programMain = `
 from usys import stdin, stdout
 import ustruct

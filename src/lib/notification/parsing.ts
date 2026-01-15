@@ -8,7 +8,7 @@ import {
   Status,
   statusToFlag,
 } from "@/lib/pybricks/protocol";
-import { AnyEvent, StatusFlags } from "./types";
+import { AnyNotification, StatusFlags } from "./types";
 
 /**
  * Parses the raw status flags number into a structured object.
@@ -26,23 +26,23 @@ export function parseStatusFlags(rawFlags: number): StatusFlags {
  * Parses a raw notification DataView into a typed event.
  * Returns null for unknown event types.
  */
-export function parseNotification(data: DataView, receivedAt: Date): AnyEvent | null {
+export function parseNotification(data: DataView, receivedAt: Date): AnyNotification | null {
   const eventType = getEventType(data);
 
   switch (eventType) {
     case EventType.StatusReport: {
       const { flags: rawFlags, runningProgId, selectedSlot } = parseStatusReport(data);
       const flags = parseStatusFlags(rawFlags);
-      return { type: EventType.StatusReport, flags, runningProgId, selectedSlot, receivedAt };
+      return { eventType: EventType.StatusReport, flags, runningProgId, selectedSlot, receivedAt };
     }
     case EventType.WriteStdout: {
       const buffer = parseWriteStdout(data);
       const message = decodeMessage(new Uint8Array(buffer));
-      return { type: EventType.WriteStdout, message, receivedAt };
+      return { eventType: EventType.WriteStdout, message, receivedAt };
     }
     case EventType.WriteAppData: {
       const buffer = parseWriteAppData(data);
-      return { type: EventType.WriteAppData, data: buffer, receivedAt };
+      return { eventType: EventType.WriteAppData, data: buffer, receivedAt };
     }
     default: {
       throw new Error(`Unknown event type: ${eventType}`);

@@ -22,7 +22,7 @@ function RouteComponent() {
 
 // export function Columns() {
 //   const { testing } = Route.useSearch();
-//   const { hubIds } = testing ? useVirtualHubs() : useHubs();
+//   const { hubIds } = testing ? useSimulatedHubs() : useHubs();
 
 //   let columnBefore = null;
 //   let columnAfter = null;
@@ -56,7 +56,7 @@ function RouteComponent() {
 // function HubColumn({ hubId }: { hubId: Hub["id"] }) {
 //   const { testing } = Route.useSearch();
 
-//   const { hub, terminalLines, telemetryEvents } = testing ? useVirtualHub(hubId) : useHub(hubId);
+//   const { hub, terminalLines, telemetryEvents } = testing ? useSimulatedHub(hubId) : useHub(hubId);
 
 //   return (
 //     <styled.div display="flex" flexDirection="column" gap="4">
@@ -71,7 +71,7 @@ function RouteComponent() {
 
 // function ConnectHubCard({ title, description }: { title?: string; description: string }) {
 //   const { testing } = Route.useSearch();
-//   const { connect } = testing ? useVirtualHubs() : useHubs();
+//   const { connect } = testing ? useSimulatedHubs() : useHubs();
 
 //   async function handleConnect() {
 //     await connect();
@@ -148,12 +148,12 @@ function RouteComponent() {
 //   const isReady = hub.status === HubStatus.Ready;
 
 //   const handleDisconnect = useCallback(async () => {
-//     await (testing ? virtualDisconnect() : disconnect(hub));
+//     await (testing ? simulatedDisconnect() : disconnect(hub));
 //     removeHub(hub.id);
 //   }, [hub, removeHub, testing]);
 
 //   const handleShutdown = useCallback(async () => {
-//     await (testing ? virtualHubShutdown() : hubShutdown(hub));
+//     await (testing ? simulatedHubShutdown() : hubShutdown(hub));
 //     removeHub(hub.id);
 //   }, [hub, removeHub, testing]);
 

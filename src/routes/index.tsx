@@ -5,16 +5,13 @@ import { HubsProvider } from "@/lib/hub/context";
 import { useHubsContext } from "@/lib/hub/hooks";
 import { Hub, HubStatus } from "@/lib/hub/types";
 import * as HubUtils from "@/lib/hub/utils";
+import { TelemetryEvent } from "@/lib/telemetry/types";
 import { createFileRoute } from "@tanstack/react-router";
 import { PlusIcon, XIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { styled } from "styled-system/jsx";
-import z from "zod";
 
 export const Route = createFileRoute("/")({
-  validateSearch: z.object({
-    virtual: z.boolean().optional().catch(false),
-  }),
   component: RouteComponent,
 });
 
@@ -27,14 +24,8 @@ function RouteComponent() {
 }
 
 function Main() {
-  const { hubs, addHub, removeHub, setVirtualMode } = useHubsContext();
+  const { hubs, addHub, removeHub } = useHubsContext();
   const [tab, setTab] = useState<string>(hubs[0]?.id);
-
-  const { virtual } = Route.useSearch();
-
-  useEffect(() => {
-    setVirtualMode(virtual ?? false);
-  }, [virtual, setVirtualMode]);
 
   function handleAddHub() {
     const newHub: Hub = { id: crypto.randomUUID(), name: "Untitled", status: HubStatus.Idle };
@@ -99,14 +90,39 @@ function Main() {
 }
 
 function HubDashboard({ hub }: { hub: Hub }) {
+  const [terminalOutput, setTerminalOutput] = useState<string>("");
+  const [telemetryEvents, setTelemetryEvents] = useState<TelemetryEvent[]>([]);
+
+  function handleTerminalOutput(output: string) {
+    setTerminalOutput((prev) => prev + output);
+  }
+
+  function handleTelemetryEvent(event: TelemetryEvent) {
+    setTelemetryEvents((prev) => [...prev, event]);
+  }
+
+  function handleDisconnect() {
+    setTerminalOutput("");
+    setTelemetryEvents([]);
+  }
+
   return (
     <styled.main p="8" display="grid" gridTemplateColumns={{ md: "repeat(2, minmax(0, 1fr))", lg: "repeat(3, minmax(0, 1fr))" }} gap="6">
       <styled.div key={hub.id} display="flex" flexDirection="column" gap="4">
         {hub.status === HubStatus.Idle ? (
-          <HubComponents.ConnectCard hub={hub} title={hub.name} description="Let's connect this hub to get started." />
+          <HubComponents.ConnectCard
+            hub={hub}
+            title={hub.name}
+            description="Let's connect this hub to get started."
+            onTerminalOutput={handleTerminalOutput}
+            onTelemetryEvent={handleTelemetryEvent}
+            onDisconnect={handleDisconnect}
+          />
         ) : (
           <>
             <HubComponents.DetailsCard hub={hub} />
+            <HubComponents.TerminalCard terminalOutput={terminalOutput} />
+            <HubComponents.TelemetryCard telemetryEvents={telemetryEvents} />
           </>
         )}
       </styled.div>

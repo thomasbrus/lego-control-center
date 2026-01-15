@@ -1,15 +1,27 @@
 import * as HubActions from "@/lib/hub/actions";
 import * as HubUtils from "@/lib/hub/utils";
-import { useCallback, useContext } from "react";
-import { pybricksHubCapabilitiesCharacteristicUUID, pybricksServiceUUID, requestDeviceOptions } from "../pybricks/constants";
+import { useCallback, useContext, useRef } from "react";
+import * as NotificationParsing from "../notification/parsing";
+import * as PybricksCommands from "../pybricks/commands";
+import { requestDeviceOptions } from "../pybricks/constants";
+import { EventType } from "../pybricks/protocol";
+import * as TelemetryParsing from "../telemetry/parsing";
+import { TelemetryEvent } from "../telemetry/types";
 import { HubsContext } from "./context";
-import { Hub, HubCapabilities, HubStatus } from "./types";
+import { programMain } from "./program";
+import { Hub, HubCapabilities, HubId, HubStatus } from "./types";
 
 export function useHub() {
   const { updateHub, disconnectHub } = useHubsContext();
+  const listenerRefs = useRef<Map<HubId, (event: Event) => void>>(new Map());
 
   const connect = useCallback(
-    async (hub: Hub) => {
+    async (
+      hub: Hub,
+      options: {
+        onDisconnect: () => void;
+      }
+    ) => {
       let device: BluetoothDevice;
 
       try {
@@ -23,6 +35,7 @@ export function useHub() {
 
       device.addEventListener("gattserverdisconnected", () => {
         disconnectHub(hub.id);
+        options.onDisconnect();
       });
 
       await device.gatt?.connect();
@@ -32,14 +45,72 @@ export function useHub() {
     [updateHub]
   );
 
+  const startNotifications = useCallback(
+    async (
+      hub: Hub,
+      options: {
+        onTerminalOutput: (output: string) => void;
+        onTelemetryEvent: (event: TelemetryEvent) => void;
+      }
+    ) => {
+      HubUtils.assertConnected(hub);
+
+      const startingNotificationsHub = updateHub(hub.id, { ...hub, status: HubStatus.StartingNotifications });
+      const characteristic = await PybricksCommands.getPybricksControlCharacteristic(hub.device);
+
+      const existingListener = listenerRefs.current.get(hub.id);
+
+      if (existingListener) {
+        characteristic.removeEventListener("characteristicvaluechanged", existingListener);
+      }
+
+      // Just to be sure, see https://github.com/pybricks/pybricks-code/blob/a4aade5a29945f55a12608b43e3e62e9e333fc03/src/ble/sagas.ts#L353-L359
+      await characteristic.stopNotifications();
+      await characteristic.startNotifications();
+
+      const listener = (event: Event) => {
+        const value = (event.target as BluetoothRemoteGATTCharacteristic).value;
+        const notification = value && NotificationParsing.parseNotification(value, new Date());
+
+        if (notification) {
+          if (notification.eventType === EventType.WriteStdout) {
+            options.onTerminalOutput(notification.message);
+          }
+
+          if (notification.eventType === EventType.WriteAppData) {
+            const telemetryEvent = TelemetryParsing.parseTelemetryEvent(notification.data);
+            options.onTelemetryEvent(telemetryEvent);
+          }
+        }
+      };
+
+      listenerRefs.current.set(hub.id, listener);
+      characteristic.addEventListener("characteristicvaluechanged", listener);
+
+      return updateHub(hub.id, { ...startingNotificationsHub, status: HubStatus.Ready });
+    },
+    []
+  );
+
+  const stopNotifications = useCallback(async (hub: Hub) => {
+    if (!HubUtils.isConnected(hub)) return;
+
+    const characteristic = await PybricksCommands.getPybricksControlCharacteristic(hub.device);
+    await characteristic.stopNotifications();
+
+    const listener = listenerRefs.current.get(hub.id);
+    if (listener) {
+      characteristic.removeEventListener("characteristicvaluechanged", listener);
+      listenerRefs.current.delete(hub.id);
+    }
+  }, []);
+
   const retrieveCapabilities = useCallback(
     async (hub: Hub) => {
       HubUtils.assertConnected(hub);
 
       const retrievingCapabilitiesHub = updateHub(hub.id, { ...hub, status: HubStatus.RetrievingCapabilities });
-
-      const primaryService = await hub.device.gatt.getPrimaryService(pybricksServiceUUID);
-      const characteristic = await primaryService?.getCharacteristic(pybricksHubCapabilitiesCharacteristicUUID);
+      const characteristic = await PybricksCommands.getPybricksHubCapabilitiesCharacteristic(hub.device);
 
       const value = await characteristic.readValue();
       const maxWriteSize = value.getUint16(0, true);
@@ -50,9 +121,37 @@ export function useHub() {
     [updateHub]
   );
 
+  const startRepl = useCallback(
+    async (hub: Hub) => {
+      const startingReplHub = updateHub(hub.id, { ...hub, status: HubStatus.StartingRepl });
+      await HubActions.startRepl(hub);
+
+      return updateHub(hub.id, { ...startingReplHub, status: HubStatus.Ready });
+    },
+    [updateHub]
+  );
+
+  const launchProgram = useCallback(
+    async (hub: Hub) => {
+      HubUtils.assertConnected(hub);
+
+      const uploadingProgramHub = updateHub(hub.id, { ...hub, status: HubStatus.UploadingProgram });
+
+      await HubActions.enterPasteMode(hub);
+      await HubActions.writeStdinWithResponse(hub, programMain);
+      await HubActions.exitPasteMode(hub);
+
+      // TODO: Start program
+
+      return updateHub(hub.id, { ...uploadingProgramHub, status: HubStatus.Ready });
+    },
+    [updateHub]
+  );
+
   const disconnect = useCallback(
     async (hub: Hub) => {
       if (HubUtils.isConnected(hub)) {
+        await stopNotifications(hub);
         await HubActions.disconnect(hub);
         return disconnectHub(hub.id);
       }
@@ -60,7 +159,15 @@ export function useHub() {
     [updateHub]
   );
 
-  return { connect, retrieveCapabilities, disconnect };
+  return {
+    connect,
+    startNotifications,
+    retrieveCapabilities,
+    stopNotifications,
+    startRepl,
+    launchProgram,
+    disconnect,
+  };
 }
 
 export function useHubsContext() {

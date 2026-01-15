@@ -1,5 +1,7 @@
 import * as HubUtils from "@/lib/hub/utils";
-import { createWriteAppDataCommands, createWriteStdinCommands, stopUserProgram, writeCommandsWithResponse } from "@/lib/pybricks/commands";
+import * as PybricksCommands from "@/lib/pybricks/commands";
+import * as NotificationParsing from "../notification/parsing";
+import { EventType } from "../pybricks/protocol";
 import { Hub } from "./types";
 
 /**
@@ -30,7 +32,7 @@ function createCommandBuffer(commandId: number, ...args: number[]): ArrayBuffer 
 export async function disconnect(hub: Hub) {
   if (HubUtils.isConnected(hub)) {
     try {
-      await stopUserProgram(hub.device);
+      await PybricksCommands.stopUserProgram(hub.device);
     } catch {
       // Ignore errors - device may not be fully ready yet
     } finally {
@@ -39,10 +41,36 @@ export async function disconnect(hub: Hub) {
   }
 }
 
+export async function startRepl(hub: Hub) {
+  HubUtils.assertConnected(hub);
+  await PybricksCommands.startReplUserProgram(hub.device);
+  await waitForReplReady(hub);
+}
+
+function waitForReplReady(hub: Hub) {
+  return new Promise<void>((resolve) => {
+    HubUtils.assertConnected(hub);
+
+    const listener = (event: Event) => {
+      const target = event.target as BluetoothRemoteGATTCharacteristic;
+      const notification = target.value && NotificationParsing.parseNotification(target.value, new Date());
+
+      if (notification?.eventType === EventType.WriteStdout && notification.message.endsWith(">>> ")) {
+        target.removeEventListener("characteristicvaluechanged", listener);
+        resolve();
+      }
+    };
+
+    PybricksCommands.getPybricksControlCharacteristic(hub.device).then((characteristic) => {
+      characteristic.addEventListener("characteristicvaluechanged", listener);
+    });
+  });
+}
+
 export async function writeStdinWithResponse(hub: Hub, message: string) {
   HubUtils.assertWithCapabilities(hub);
-  const commands = createWriteStdinCommands(message, hub.capabilities.maxWriteSize);
-  return await writeCommandsWithResponse(hub.device, commands);
+  const commands = PybricksCommands.createWriteStdinCommands(message, hub.capabilities.maxWriteSize);
+  return await PybricksCommands.writeCommandsWithResponse(hub.device, commands);
 }
 
 /**
@@ -56,8 +84,8 @@ export async function writeStdinWithResponse(hub: Hub, message: string) {
  */
 export async function writeAppData(hub: Hub, data: ArrayBuffer, offset: number = 0) {
   HubUtils.assertWithCapabilities(hub);
-  const commands = createWriteAppDataCommands(data, hub.capabilities.maxWriteSize, offset);
-  return await writeCommandsWithResponse(hub.device, commands);
+  const commands = PybricksCommands.createWriteAppDataCommands(data, hub.capabilities.maxWriteSize, offset);
+  return await PybricksCommands.writeCommandsWithResponse(hub.device, commands);
 }
 
 export async function turnLightOn(hub: Hub) {
@@ -91,15 +119,15 @@ export async function exitPasteMode(hub: Hub) {
 }
 
 /**
- * Virtual hub disconnect - simulates disconnect with delay
+ * Simulated hub disconnect - simulates disconnect with delay
  */
-export async function virtualDisconnect() {
+export async function simulatedDisconnect() {
   await new Promise((resolve) => setTimeout(resolve, 150));
 }
 
 /**
- * Virtual hub shutdown - simulates shutdown with delay
+ * Simulated hub shutdown - simulates shutdown with delay
  */
-export async function virtualHubShutdown() {
+export async function simulatedHubShutdown() {
   await new Promise((resolve) => setTimeout(resolve, 150));
 }

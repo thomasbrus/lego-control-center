@@ -1,9 +1,9 @@
 import { Card, Heading, Switch } from "@/components/ui";
-import { SwitchCheckedChangeDetails } from "@ark-ui/react";
+import { ModeProvider } from "@/lib/mode/context";
+import { useModeContext } from "@/lib/mode/hooks";
 import type { QueryClient } from "@tanstack/react-query";
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import { styled } from "styled-system/jsx";
-import z from "zod";
 import appCss from "../styles/index.css?url";
 
 interface MyRouterContext {
@@ -31,26 +31,16 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
     ],
   }),
-  validateSearch: z.object({
-    virtual: z.boolean().optional().catch(false),
+  validateSearch: (search) => ({
+    mode: typeof search.mode === "string" ? search.mode : "live",
   }),
-  component: RootComponent,
   shellComponent: RootDocument,
+  component: RootComponent,
   notFoundComponent: NotFoundPage,
 });
 
 function RootComponent() {
-  const { virtual } = Route.useSearch();
-
-  async function handleModeChange(details: SwitchCheckedChangeDetails) {
-    const searchParams = new URLSearchParams(window.location.search);
-    if (details.checked) {
-      searchParams.set("virtual", "true");
-    } else {
-      searchParams.delete("virtual");
-    }
-    window.location.search = searchParams.toString();
-  }
+  const { simulated, setSimulated } = useModeContext();
 
   return (
     <styled.div bg="gray.2" minH="dvh">
@@ -67,11 +57,17 @@ function RootComponent() {
         gap="3"
       >
         <Heading>LEGO Control Center</Heading>
-        <Switch.Root checked={virtual ?? false} onCheckedChange={handleModeChange} size="xs" colorPalette="green" cursor="pointer">
+        <Switch.Root
+          checked={simulated}
+          onCheckedChange={(details) => setSimulated(details.checked)}
+          size="xs"
+          colorPalette="green"
+          cursor="pointer"
+        >
           <Switch.Control>
             <Switch.Thumb />
           </Switch.Control>
-          <Switch.Label>Virtual mode</Switch.Label>
+          <Switch.Label>Simulated mode</Switch.Label>
           <Switch.HiddenInput />
         </Switch.Root>
       </styled.header>
@@ -88,7 +84,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <ModeProvider mode={Route.useSearch().mode}>{children}</ModeProvider>
         <Scripts />
       </body>
     </html>

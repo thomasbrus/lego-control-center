@@ -1,27 +1,52 @@
 import { Button, Card } from "@/components/ui";
 import { EmptyState } from "@/components/ui/empty-state";
 import * as HubHooks from "@/lib/hub/hooks";
-import { useHubsContext } from "@/lib/hub/hooks";
 import { Hub } from "@/lib/hub/types";
-import * as VirtualHubHooks from "@/lib/virtual-hub/hooks";
+import { useModeContext } from "@/lib/mode/hooks";
+import * as SimulatedHubHooks from "@/lib/simulated-hub/hooks";
+import { TelemetryEvent } from "@/lib/telemetry/types";
 import { BluetoothIcon } from "lucide-react";
 
-export function ConnectCard({ hub, title, description }: { hub: Hub; title: string; description: string }) {
-  const { virtualMode } = useHubsContext();
-  const { connect, retrieveCapabilities } = virtualMode ? VirtualHubHooks.useHub() : HubHooks.useHub();
+export function ConnectCard({
+  hub,
+  title,
+  description,
+  onTerminalOutput,
+  onTelemetryEvent,
+  onDisconnect,
+}: {
+  hub: Hub;
+  title: string;
+  description: string;
+  onTerminalOutput: (output: string) => void;
+  onTelemetryEvent: (event: TelemetryEvent) => void;
+  onDisconnect: () => void;
+}) {
+  const { simulated } = useModeContext();
+  const { connect, startNotifications, retrieveCapabilities, startRepl, launchProgram } = simulated
+    ? SimulatedHubHooks.useHub()
+    : HubHooks.useHub();
 
   async function handleConnect() {
-    const connectedHub = await connect(hub);
+    let connectedHub = await connect(hub, { onDisconnect });
 
     if (connectedHub) {
       // 1. set up characteristicvaluechanged handler
-      // 2. stop / start notifications
-      await retrieveCapabilities(connectedHub);
-      // 3. start repl
-      // 4. wait for repl ready (based on stdout line)
-      // 5. upload program via paste mode
-      // 6. run program
+      // 2. stop / start notifications (remember to use stop start trick)
+      // 3. retrieve capabilities
+      // 4. start repl
+      // 5. wait for repl ready (based on stdout line)
+      // 6. upload program via paste mode
+      // 7. run program
+
+      let updatedHub = await startNotifications(connectedHub, { onTerminalOutput, onTelemetryEvent });
+      updatedHub = await retrieveCapabilities(updatedHub);
+      updatedHub = await startRepl(updatedHub);
+      updatedHub = await launchProgram(updatedHub);
     }
+
+    // cleanup:
+    // stopNotifications + disconnect
   }
 
   return (

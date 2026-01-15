@@ -1,13 +1,13 @@
 import { Badge, Button, Card, Group, Table } from "@/components/ui";
 import * as HubHooks from "@/lib/hub/hooks";
-import { useHubsContext } from "@/lib/hub/hooks";
 import { Hub, HubStatus } from "@/lib/hub/types";
 import * as HubUtils from "@/lib/hub/utils";
-import * as VirtualHubHooks from "@/lib/virtual-hub/hooks";
+import { useModeContext } from "@/lib/mode/hooks";
+import * as SimulatedHubHooks from "@/lib/simulated-hub/hooks";
 
 export function DetailsCard({ hub }: { hub: Hub }) {
-  const { virtualMode } = useHubsContext();
-  const { disconnect } = virtualMode ? VirtualHubHooks.useHub() : HubHooks.useHub();
+  const { simulated } = useModeContext();
+  const { disconnect } = simulated ? SimulatedHubHooks.useHub() : HubHooks.useHub();
 
   function handleShutdown() {
     // Placeholder for shutdown logic
@@ -61,17 +61,19 @@ function StatusBadge({ status }: { status: HubStatus }) {
     case HubStatus.Idle:
       return <Badge colorPalette="gray">Idle</Badge>;
     case HubStatus.Connecting:
-      return <Badge colorPalette="yellow">Connecting...</Badge>;
+      return <Badge colorPalette="blue">Connecting...</Badge>;
     case HubStatus.Connected:
       return <Badge colorPalette="green">Connected</Badge>;
+    case HubStatus.StartingNotifications:
+      return <Badge colorPalette="yellow">Starting notifications...</Badge>;
     case HubStatus.RetrievingCapabilities:
-      return <Badge colorPalette="blue">Retrieving capabilities...</Badge>;
+      return <Badge colorPalette="yellow">Retrieving capabilities...</Badge>;
     case HubStatus.StartingRepl:
-      return <Badge colorPalette="blue">Starting REPL...</Badge>;
+      return <Badge colorPalette="yellow">Starting REPL...</Badge>;
     case HubStatus.UploadingProgram:
-      return <Badge colorPalette="blue">Uploading program...</Badge>;
+      return <Badge colorPalette="yellow">Uploading program...</Badge>;
     case HubStatus.StartingProgram:
-      return <Badge colorPalette="blue">Starting program...</Badge>;
+      return <Badge colorPalette="yellow">Starting program...</Badge>;
     case HubStatus.Ready:
       return <Badge colorPalette="green">Ready</Badge>;
     case HubStatus.Error:

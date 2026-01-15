@@ -17,6 +17,7 @@ export enum HubStatus {
   Idle = "idle",
   Connecting = "connecting",
   Connected = "connected",
+  StartingNotifications = "starting-notifications",
   RetrievingCapabilities = "retrieving-capabilities",
   StartingRepl = "starting-repl",
   UploadingProgram = "uploading-program",

@@ -1,5 +1,5 @@
 import { Hub, HubId, HubStatus } from "@/lib/hub/types";
-import { createContext, useReducer, useState } from "react";
+import { createContext, useCallback, useReducer } from "react";
 
 // Action types for the reducer
 type HubAction =
@@ -10,14 +10,12 @@ type HubAction =
 
 interface HubsContextValue {
   hubs: Hub[];
-  virtualMode: boolean;
-  setVirtualMode: (enabled: boolean) => void;
   getHub: (id: HubId) => Hub;
   dispatch: React.Dispatch<HubAction>;
   addHub: (hub: Hub) => void;
   removeHub: (id: HubId) => void;
   updateHub: (id: HubId, updatedHub: Hub) => Hub;
-  disconnectHub: (id: HubId) => Hub;
+  disconnectHub: (id: HubId) => void;
 }
 
 export const HubsContext = createContext<HubsContextValue | undefined>(undefined);
@@ -60,38 +58,37 @@ function hubsReducer(state: Map<HubId, Hub>, action: HubAction): Map<HubId, Hub>
 
 export function HubsProvider({ children }: { children: React.ReactNode }) {
   const [hubs, dispatch] = useReducer(hubsReducer, new Map<HubId, Hub>([[idleHub.id, idleHub]]));
-  const [virtualMode, setVirtualMode] = useState(false);
 
-  function getHub(id: HubId) {
-    const hub = hubs.get(id);
-    if (!hub) throw new Error(`Hub not found: ${id}`);
-    return hub;
-  }
+  const getHub = useCallback(
+    (id: HubId) => {
+      const hub = hubs.get(id);
+      if (!hub) throw new Error(`Hub not found: ${id}`);
+      return hub;
+    },
+    [hubs]
+  );
 
-  function addHub(hub: Hub) {
+  const addHub = useCallback((hub: Hub) => {
     dispatch({ type: "ADD_HUB", hub });
-  }
+  }, []);
 
-  function removeHub(id: HubId) {
+  const removeHub = useCallback((id: HubId) => {
     dispatch({ type: "REMOVE_HUB", id });
-  }
+  }, []);
 
-  function updateHub(id: HubId, updatedHub: Hub) {
+  const updateHub = useCallback((id: HubId, updatedHub: Hub) => {
     dispatch({ type: "UPDATE_HUB", id, updatedHub });
     return updatedHub;
-  }
+  }, []);
 
-  function disconnectHub(id: HubId) {
+  const disconnectHub = useCallback((id: HubId) => {
     dispatch({ type: "DISCONNECT_HUB", id });
-    return getHub(id);
-  }
+  }, []);
 
   return (
     <HubsContext.Provider
       value={{
         hubs: Array.from(hubs.values()),
-        virtualMode,
-        setVirtualMode,
         getHub,
         dispatch,
         addHub,

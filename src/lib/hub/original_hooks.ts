@@ -94,14 +94,14 @@
 //   return { hubIds, connect };
 // }
 
-// export function useVirtualHubs(): ReturnType<typeof useHubs> {
+// export function useSimulatedHubs(): ReturnType<typeof useHubs> {
 //   const { hubIds, addHub, updateHubStatus } = useHubsContext();
 
 //   const connect = useCallback(async () => {
-//     const id = `virtual-hub-${crypto.randomUUID()}`;
+//     const id = `simulated-hub-${crypto.randomUUID()}`;
 //     const hub: Hub = {
 //       id,
-//       name: "Virtual Hub",
+//       name: "Simulated Hub",
 //       device: {} as BluetoothDevice,
 //       status: HubStatus.Connecting,
 //       capabilities: {
@@ -215,7 +215,7 @@
 //   return { hub, terminalLines, telemetryEvents } as const;
 // }
 
-// export function useVirtualHub(id: Hub["id"]): ReturnType<typeof useHub> {
+// export function useSimulatedHub(id: Hub["id"]): ReturnType<typeof useHub> {
 //   const { getHub, updateHubStatusFlags } = useHubsContext();
 //   const [terminalLines, setTerminalLines] = useState<string[]>([]);
 //   const [telemetryEvents, setTelemetryEvents] = useState<TelemetryEvent[]>([]);
@@ -224,7 +224,7 @@
 //   useEffect(() => {
 //     if (!hub || hub.status !== HubStatus.Connected) return;
 
-//     async function emitVirtualEvents() {
+//     async function emitSimulatedEvents() {
 //       await delay(100);
 
 //       const statusEvent1: StatusReportEvent = {
@@ -239,7 +239,7 @@
 
 //       await delay(50);
 
-//       setTerminalLines((prev) => [...prev, "Virtual Hub initialized"]);
+//       setTerminalLines((prev) => [...prev, "Simulated Hub initialized"]);
 
 //       await delay(100);
 
@@ -259,7 +259,7 @@
 
 //       await delay(200);
 
-//       setTerminalLines((prev) => [...prev, "print('Hello from Virtual Hub!')", "Hello from Virtual Hub!", ">>> "]);
+//       setTerminalLines((prev) => [...prev, "print('Hello from Simulated Hub!')", "Hello from Simulated Hub!", ">>> "]);
 
 //       for (let i = 0; i < 12; i++) {
 //         await delay(200);
@@ -274,7 +274,7 @@
 //       }
 //     }
 
-//     emitVirtualEvents();
+//     emitSimulatedEvents();
 //   }, [hub?.id, hub?.status]);
 
 //   return { hub, terminalLines, telemetryEvents } as const;

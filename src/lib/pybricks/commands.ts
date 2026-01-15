@@ -1,6 +1,6 @@
 import { assertConnected } from "@/lib/device/utils";
 import { encodeMessage } from "@/lib/messages/encoding";
-import { pybricksControlCharacteristicUUID, pybricksServiceUUID } from "./constants";
+import { pybricksControlCharacteristicUUID, pybricksHubCapabilitiesCharacteristicUUID, pybricksServiceUUID } from "./constants";
 import {
   BuiltinProgramId,
   createStartUserProgramCommand,
@@ -11,8 +11,12 @@ import {
 
 async function getPybricksService(device: BluetoothDevice) {
   assertConnected(device);
-
   return device.gatt.getPrimaryService(pybricksServiceUUID);
+}
+
+export async function getPybricksHubCapabilitiesCharacteristic(device: BluetoothDevice) {
+  const pybricksService = await getPybricksService(device);
+  return pybricksService.getCharacteristic(pybricksHubCapabilitiesCharacteristicUUID);
 }
 
 export async function getPybricksControlCharacteristic(device: BluetoothDevice) {
@@ -21,8 +25,8 @@ export async function getPybricksControlCharacteristic(device: BluetoothDevice) 
 }
 
 export function createWriteStdinCommands(message: string, maxWriteSize: number) {
-  // The max payload size is very important to get right here.
-  const maxPayloadSize = maxWriteSize - 55;
+  // This max payload size is very important to get right here.
+  const maxPayloadSize = maxWriteSize - 42;
   const data = encodeMessage(message);
   const commands: Uint8Array<ArrayBuffer>[] = [];
 
