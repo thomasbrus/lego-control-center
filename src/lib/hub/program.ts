@@ -197,11 +197,6 @@ class HubController:
 
 hub_controller = HubController()
 
-async def discover_motors_loop():
-    while True:
-        motors_controller.discover()
-        await wait(500)
-
 async def process_stdin_command_loop():
     while True:
         await hub_controller.process_stdin_command()
@@ -219,7 +214,6 @@ async def broadcast_telemetry_loop():
 
 async def main():
     await multitask(
-        discover_motors_loop(),
         process_stdin_command_loop(),
         process_app_data_command_loop(),
         broadcast_telemetry_loop()

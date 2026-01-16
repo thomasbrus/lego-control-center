@@ -25,8 +25,9 @@ export async function getPybricksControlCharacteristic(device: BluetoothDevice) 
 }
 
 export function createWriteStdinCommands(message: string, maxWriteSize: number) {
-  // This max payload size is very important to get right here.
-  const maxPayloadSize = maxWriteSize - 56;
+  // See why 32 bytes here:
+  // https://github.com/pybricks/pybricks-code/blob/a4aade5a29945f55a12608b43e3e62e9e333fc03/src/lwp3-bootloader/protocol.ts#L66-L80
+  const maxPayloadSize = Math.min(maxWriteSize, 32);
   const data = encodeMessage(message);
   const commands: Uint8Array<ArrayBuffer>[] = [];
 
