@@ -1,5 +1,3 @@
-import { ConnectedBluetoothDevice } from "../device/types";
-
 export type HubId = BluetoothDevice["id"];
 
 export interface Hub {
@@ -10,20 +8,17 @@ export interface Hub {
   capabilities?: HubCapabilities;
 }
 
-export type ConnectedHub = Hub & { device: ConnectedBluetoothDevice };
-export type WithCapabilitiesHub = ConnectedHub & { capabilities: HubCapabilities };
-
 export enum HubStatus {
-  Idle = "idle",
-  Connecting = "connecting",
-  Connected = "connected",
-  StartingNotifications = "starting-notifications",
-  RetrievingCapabilities = "retrieving-capabilities",
-  StartingRepl = "starting-repl",
-  UploadingProgram = "uploading-program",
-  StartingProgram = "starting-program",
-  Ready = "ready",
-  Error = "error",
+  Idle,
+  Connecting,
+  Connected,
+  StartingNotifications,
+  RetrievingCapabilities,
+  StartingRepl,
+  LaunchingProgram,
+  Ready,
+  Running,
+  Error,
 }
 
 export interface HubCapabilities {

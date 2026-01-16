@@ -1,6 +1,6 @@
 import * as HubComponents from "@/components/hub";
 import { Button, IconButton, Tabs } from "@/components/ui";
-import * as HubActions from "@/lib/hub/actions";
+import * as HubCommands from "@/lib/hub/commands";
 import { HubsProvider } from "@/lib/hub/context";
 import { useHubsContext } from "@/lib/hub/hooks";
 import { Hub, HubStatus } from "@/lib/hub/types";
@@ -35,7 +35,7 @@ function Main() {
 
   function handleTabClose(event: React.MouseEvent, hub: Hub) {
     event.stopPropagation();
-    if (HubUtils.isConnected(hub)) HubActions.disconnect(hub);
+    if (HubUtils.isConnected(hub)) HubCommands.disconnect(hub);
     const originalIndex = hubs.findIndex((h) => h.id === hub.id);
     const isCurrentTab = tab === hub.id;
     const isLastTab = originalIndex === hubs.length - 1;
@@ -108,24 +108,23 @@ function HubDashboard({ hub }: { hub: Hub }) {
 
   return (
     <styled.main p="8" display="grid" gridTemplateColumns={{ md: "repeat(2, minmax(0, 1fr))", lg: "repeat(3, minmax(0, 1fr))" }} gap="6">
-      <styled.div key={hub.id} display="flex" flexDirection="column" gap="4">
-        {hub.status === HubStatus.Idle ? (
-          <HubComponents.ConnectCard
-            hub={hub}
-            title={hub.name}
-            description="Let's connect this hub to get started."
-            onTerminalOutput={handleTerminalOutput}
-            onTelemetryEvent={handleTelemetryEvent}
-            onDisconnect={handleDisconnect}
-          />
-        ) : (
-          <>
-            <HubComponents.DetailsCard hub={hub} />
-            <HubComponents.TerminalCard terminalOutput={terminalOutput} />
-            <HubComponents.TelemetryCard telemetryEvents={telemetryEvents} />
-          </>
-        )}
-      </styled.div>
+      {hub.status === HubStatus.Idle ? (
+        <HubComponents.ConnectCard
+          hub={hub}
+          title={hub.name}
+          description="Let's connect this hub to get started."
+          onTerminalOutput={handleTerminalOutput}
+          onTelemetryEvent={handleTelemetryEvent}
+          onDisconnect={handleDisconnect}
+        />
+      ) : (
+        <>
+          <HubComponents.DetailsCard hub={hub} />
+          <HubComponents.LightCard hub={hub} />
+          <HubComponents.TerminalCard terminalOutput={terminalOutput} />
+          <HubComponents.TelemetryCard telemetryEvents={telemetryEvents} />
+        </>
+      )}
     </styled.main>
   );
 }

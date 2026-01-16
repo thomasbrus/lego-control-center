@@ -31,22 +31,11 @@ export function ConnectCard({
     let connectedHub = await connect(hub, { onDisconnect });
 
     if (connectedHub) {
-      // 1. set up characteristicvaluechanged handler
-      // 2. stop / start notifications (remember to use stop start trick)
-      // 3. retrieve capabilities
-      // 4. start repl
-      // 5. wait for repl ready (based on stdout line)
-      // 6. upload program via paste mode
-      // 7. run program
-
       let updatedHub = await startNotifications(connectedHub, { onTerminalOutput, onTelemetryEvent });
       updatedHub = await retrieveCapabilities(updatedHub);
       updatedHub = await startRepl(updatedHub);
       updatedHub = await launchProgram(updatedHub);
     }
-
-    // cleanup:
-    // stopNotifications + disconnect
   }
 
   return (

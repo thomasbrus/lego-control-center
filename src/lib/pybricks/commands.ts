@@ -26,7 +26,7 @@ export async function getPybricksControlCharacteristic(device: BluetoothDevice) 
 
 export function createWriteStdinCommands(message: string, maxWriteSize: number) {
   // This max payload size is very important to get right here.
-  const maxPayloadSize = maxWriteSize - 42;
+  const maxPayloadSize = maxWriteSize - 56;
   const data = encodeMessage(message);
   const commands: Uint8Array<ArrayBuffer>[] = [];
 
@@ -74,12 +74,12 @@ export async function writeCommandsWithoutResponse(device: BluetoothDevice, comm
   }
 }
 
-async function writeCommandWithResponse(device: BluetoothDevice, value: Uint8Array<ArrayBuffer>) {
+export async function writeCommandWithResponse(device: BluetoothDevice, value: Uint8Array<ArrayBuffer>) {
   const controlCharacteristic = await getPybricksControlCharacteristic(device);
   await controlCharacteristic.writeValueWithResponse(value);
 }
 
-async function writeCommandWithoutResponse(device: BluetoothDevice, value: Uint8Array<ArrayBuffer>) {
+export async function writeCommandWithoutResponse(device: BluetoothDevice, value: Uint8Array<ArrayBuffer>) {
   const controlCharacteristic = await getPybricksControlCharacteristic(device);
   // Seems not to do anything when used with the Pybricks control characteristic
   await controlCharacteristic.writeValueWithoutResponse(value);

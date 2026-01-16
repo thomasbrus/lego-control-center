@@ -1,10 +1,21 @@
 export const programDemo = `
 print("Hello world!")
+
+async def say_hello():
+    while True:
+        print("Hello world!")
+        await wait(1000)
+
+async def main():
+    await multitask(say_hello())
+
+run_task(main())
 `;
 
 export const programMain = `
 from usys import stdin, stdout
-import ustruct
+from ustruct import unpack, pack_into, calcsize
+from uselect import poll
 
 class BatteryMonitor:
     def __init__(self, hub, v_min=6000, v_max=8300):
@@ -46,13 +57,13 @@ class NoneMotor:
     def __getattr__(self, name):
         return do_nothing
 
-class MotorController:
+class MotorsController:
     def __init__(self, ports):
         self.ports = ports
         self.motors = {}
-        self._discover()
+        self.discover()
 
-    def _discover(self):
+    def discover(self):
         for port in self.ports:
             try:
                 self.motors[port] = Motor(port)
@@ -83,71 +94,89 @@ class MotorController:
         return angles, speeds
 
 # Global instances for shared state
-motor_controller = MotorController([Port.A, Port.B, Port.C, Port.D])
+motors_controller = MotorsController([Port.A, Port.B, Port.C, Port.D])
 light_manager = LightManager(hub)
 battery_monitor = BatteryMonitor(hub)
 
 class Commands:
-    HUB_SHUTDOWN        = 0x10
-    MOTOR_SET_SPEEDS    = 0x20
-    MOTOR_STOP_ALL      = 0x21
-    LIGHT_SET           = 0x30
+    SHUTDOWN_HUB       = 0x10
+    SET_MOTOR_SPEEDS   = 0x20
+    STOP_ALL_MOTORS    = 0x21
+    SET_LIGHT          = 0x30
 
-class CommandProtocol:
+    @classmethod
+    def all(cls):
+        return [cls.SHUTDOWN_HUB, cls.SET_MOTOR_SPEEDS, cls.STOP_ALL_MOTORS, cls.SET_LIGHT]
+
+class PacketProtocol:
     # [CommandId(B), ...4xArgument(h)]
     FORMAT = "<Bhhhh"
-    SIZE = ustruct.calcsize(FORMAT)
+    SIZE = calcsize(FORMAT)
 
-# AppData for bidirectional communication
-app_data = AppData(CommandProtocol.FORMAT)
+app_data = AppData(PacketProtocol.FORMAT)
 
 class CommandHandler:
     def __init__(self):
-        pass
+        self.poller = poll()
+        self.poller.register(stdin)
 
-    def process_stdin(self):
-        values = ustruct.unpack(CommandProtocol.FORMAT, stdin.buffer.read(CommandProtocol.SIZE))
-        self._execute(values)
+    async def process_stdin(self):
+        while not self.poller.poll(0):
+            await wait(10)
+
+        command_id = stdin.buffer.read(1)[0]
+
+        # Remove bytes that are not commands
+        while command_id not in Commands.all():
+            command_id = stdin.buffer.read(1)[0]
+
+        payload = bytes([command_id]) + stdin.buffer.read(PacketProtocol.SIZE - 1)
+        values = unpack(PacketProtocol.FORMAT, payload)
+
+        args = values[1:]
+        self.handle_command(command_id, args)
 
     def process_app_data(self):
-        self._execute(app_data.get_values())
-
-    def _execute(self, values):
+        values = app_data.get_values()
         command_id = values[0]
+        args = values[1:]
+        self.handle_command(command_id, args)
 
-        if command_id == Commands.HUB_SHUTDOWN:
+    def handle_command(self, command_id, args):
+        if command_id == Commands.SHUTDOWN_HUB:
             hub.system.shutdown()
-        elif command_id == Commands.MOTOR_SET_SPEEDS:
-            # values[1:5] = speeds for ports A-D
-            motor_controller.set_speeds(values[1:])
-        elif command_id == Commands.MOTOR_STOP_ALL:
-            motor_controller.stop_all()
-        elif command_id == Commands.LIGHT_SET:
-            # values[1] = color index (0 = NONE)
-            light_manager.set(values[1])
+        elif command_id == Commands.SET_MOTOR_SPEEDS:
+            motors_controller.set_speeds(args[0:])
+        elif command_id == Commands.STOP_ALL_MOTORS:
+            motors_controller.stop_all()
+        elif command_id == Commands.SET_LIGHT:
+            light_manager.set(args[0])
 
 class TelemetryProtocol:
-    # [Time(I), HubBattery(B), ...4xMotorAngle(h), ...4xMotorSpeed(h), LightStatus(B)]
-    FORMAT = "<IBhhhhhhhhB"
+    # [HubBattery(B), ...4xMotorAngle(h), ...4xMotorSpeed(h), LightStatus(B)]
+    FORMAT = "<BhhhhhhhhB"
+    SIZE = calcsize(FORMAT)
 
 class TelemetryCollector:
     def __init__(self):
         self.stopWatch = StopWatch()
+        self.payload = bytearray(TelemetryProtocol.SIZE)
 
     def collect(self):
-        angles, speeds = motor_controller.read_state()
+        angles, speeds = motors_controller.read_state()
         battery_percentage = battery_monitor.percentage()
 
-        payload = ustruct.pack(
+        pack_into(
             TelemetryProtocol.FORMAT,
-            self.stopWatch.time(),
+            self.payload,
+            0,
             battery_percentage,
             *angles,
             *speeds,
             light_manager.current_index
         )
 
-        return payload
+        return bytes(self.payload)
 
     async def broadcast(self):
         await app_data.write_bytes(self.collect())
@@ -157,8 +186,8 @@ class HubController:
         self.command_handler = CommandHandler()
         self.telemetry_broadcaster = TelemetryCollector()
 
-    def process_stdin_command(self):
-        self.command_handler.process_stdin()
+    async def process_stdin_command(self):
+        await self.command_handler.process_stdin()
 
     def process_app_data_command(self):
         self.command_handler.process_app_data()
@@ -168,9 +197,15 @@ class HubController:
 
 hub_controller = HubController()
 
+async def discover_motors_loop():
+    while True:
+        motors_controller.discover()
+        await wait(500)
+
 async def process_stdin_command_loop():
     while True:
-        hub_controller.process_stdin_command()
+        await hub_controller.process_stdin_command()
+        await wait(0)
 
 async def process_app_data_command_loop():
     while True:
@@ -183,7 +218,14 @@ async def broadcast_telemetry_loop():
         await wait(1000)
 
 async def main():
-    await multitask(process_stdin_command_loop(), process_app_data_command_loop(), broadcast_telemetry_loop())
+    await multitask(
+        discover_motors_loop(),
+        process_stdin_command_loop(),
+        process_app_data_command_loop(),
+        broadcast_telemetry_loop()
+    )
+
+run_task(main())
 `;
 
 export const programRun = `

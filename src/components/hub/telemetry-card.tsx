@@ -30,7 +30,7 @@ export function TelemetryCard({ telemetryEvents }: { telemetryEvents: TelemetryE
             <Table.Root variant="surface">
               <Table.Head>
                 <Table.Row>
-                  <Table.Header>Time</Table.Header>
+                  <Table.Header>Index</Table.Header>
                   <Table.Header>Battery</Table.Header>
                   <Table.Header>Motor Angles</Table.Header>
                   <Table.Header>Motor Speeds</Table.Header>
@@ -38,13 +38,13 @@ export function TelemetryCard({ telemetryEvents }: { telemetryEvents: TelemetryE
                 </Table.Row>
               </Table.Head>
               <Table.Body>
-                {telemetryEvents.map((event, index) => (
+                {telemetryEvents.map((telemetryEvent, index) => (
                   <Table.Row key={index}>
-                    <Table.Cell>{(event.time / 1000).toFixed(1)}s</Table.Cell>
-                    <Table.Cell>{event.hubBattery}%</Table.Cell>
-                    <Table.Cell fontSize="xs">{event.motorAngles.join(", ")}</Table.Cell>
-                    <Table.Cell fontSize="xs">{event.motorSpeeds.join(", ")}</Table.Cell>
-                    <Table.Cell>{event.lightStatus}</Table.Cell>
+                    <Table.Cell>{index}</Table.Cell>
+                    <Table.Cell>{telemetryEvent.hubBattery}%</Table.Cell>
+                    <Table.Cell fontSize="xs">{telemetryEvent.motorAngles.join(", ")}</Table.Cell>
+                    <Table.Cell fontSize="xs">{telemetryEvent.motorSpeeds.join(", ")}</Table.Cell>
+                    <Table.Cell>{telemetryEvent.lightStatus}</Table.Cell>
                   </Table.Row>
                 ))}
               </Table.Body>

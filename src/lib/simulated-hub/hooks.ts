@@ -1,3 +1,4 @@
+import * as DeviceUtils from "@/lib/device/utils";
 import * as HubUtils from "@/lib/hub/utils";
 import { useCallback } from "react";
 import * as HubHooks from "../hub/hooks";
@@ -24,20 +25,18 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
         gatt: { connected: true, disconnect: () => disconnectHub(hub.id) },
       } as BluetoothDevice;
 
-      const connectedHub = updateHub(hub.id, {
+      return updateHub(hub.id, {
         ...connectingHub,
         status: HubStatus.Connected,
         device: connectedDevice,
       });
-
-      return connectedHub;
     },
     [updateHub, disconnectHub]
   );
 
   const startNotifications = useCallback(
     async (hub: Hub) => {
-      HubUtils.assertConnected(hub);
+      DeviceUtils.assertConnected(hub.device);
 
       const startingNotificationsHub = updateHub(hub.id, {
         ...hub,
@@ -62,7 +61,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
   const retrieveCapabilities = useCallback(
     async (hub: Hub) => {
-      HubUtils.assertConnected(hub);
+      DeviceUtils.assertConnected(hub.device);
 
       const retrievingCapabilitiesHub = updateHub(hub.id, {
         ...hub,
@@ -83,7 +82,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
   const startRepl = useCallback(
     async (hub: Hub) => {
-      HubUtils.assertConnected(hub);
+      DeviceUtils.assertConnected(hub.device);
 
       const startingReplHub = updateHub(hub.id, {
         ...hub,
@@ -92,9 +91,47 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       await delay(400);
 
+      //       const output = `
+      // Pybricks MicroPython ci-release-86-v3.6.1 on 2025-03-11; LEGO Technic Hub with STM32L431RC
+      // Type "help()" for more information.
+      // >>>
+      // paste mode; Ctrl-C to cancel, Ctrl-D to finish
+      // ===
+      // ===
+      // print("Hello world!");
+      //       `;
+
+      //       // Simulate REPL output by outputting in chunks
+      //       const chunkSize = 40;
+      //       for (let i = 0; i < output.length; i += chunkSize) {
+      //         const chunk = output.slice(i, i + chunkSize);
+      //         // In a real implementation, this would trigger an event or callback
+      //         console.log(chunk);
+      //         await delay(100);
+      //       }
+
       return updateHub(hub.id, {
         ...startingReplHub,
         status: HubStatus.Ready,
+      });
+    },
+    [updateHub]
+  );
+
+  const launchProgram = useCallback(
+    async (hub: Hub) => {
+      DeviceUtils.assertConnected(hub.device);
+
+      const launchingProgramHub = updateHub(hub.id, {
+        ...hub,
+        status: HubStatus.LaunchingProgram,
+      });
+
+      await delay(800);
+
+      return updateHub(hub.id, {
+        ...launchingProgramHub,
+        status: HubStatus.Running,
       });
     },
     [updateHub]
@@ -116,6 +153,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
     retrieveCapabilities,
     stopNotifications,
     startRepl,
+    launchProgram,
     disconnect,
   };
 }

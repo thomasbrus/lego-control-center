@@ -1,36 +1,77 @@
+import * as DeviceUtls from "@/lib/device/utils";
 import * as HubUtils from "@/lib/hub/utils";
 import * as PybricksCommands from "@/lib/pybricks/commands";
 import * as NotificationParsing from "../notification/parsing";
-import { EventType } from "../pybricks/protocol";
+import { createWriteStdinCommand, EventType } from "../pybricks/protocol";
 import { Hub } from "./types";
 
 /**
- * Command IDs for the AppData protocol.
- * Must match the Commands class in program.ts
+ * Command IDs for the stdin protocol (must match hub firmware)
  */
-const Commands = {
-  HUB_SHUTDOWN: 0x10,
-  MOTOR_SET_SPEEDS: 0x20,
-  MOTOR_STOP_ALL: 0x21,
-  LIGHT_SET: 0x30,
-} as const;
+export enum Commands {
+  SHUTDOWN_HUB = 0x10,
+  SET_MOTOR_SPEEDS = 0x20,
+  STOP_ALL_MOTORS = 0x21,
+  SET_LIGHT = 0x30,
+}
 
 /**
  * Creates a command buffer matching the protocol format: <Bhhhh>
  * (1 byte command + 4 signed shorts for args)
  */
-function createCommandBuffer(commandId: number, ...args: number[]): ArrayBuffer {
-  const buffer = new ArrayBuffer(9); // 1 + 2*4 bytes
+function createCommandBuffer(command: Commands, args: number[] = []): ArrayBuffer {
+  const buffer = new ArrayBuffer(9);
   const view = new DataView(buffer);
-  view.setUint8(0, commandId);
+  view.setUint8(0, command);
   for (let i = 0; i < 4; i++) {
-    view.setInt16(1 + i * 2, args[i] ?? 0, true); // little-endian
+    view.setInt16(1 + i * 2, args[i] ?? 0, true);
   }
   return buffer;
 }
 
+/**
+ * Write a command to stdin as binary (must be implemented to write to the correct BLE characteristic)
+ */
+export async function writeStdinCommand(hub: Hub, buffer: ArrayBuffer) {
+  DeviceUtls.assertConnected(hub.device);
+  const stdinCommand = createWriteStdinCommand(buffer);
+  await PybricksCommands.writeCommandWithResponse(hub.device, stdinCommand);
+}
+
+/**
+ * Shutdown the hub (writes 9 bytes to stdin)
+ */
+export async function shutdownHub(hub: Hub) {
+  const buffer = createCommandBuffer(Commands.SHUTDOWN_HUB);
+  await writeStdinCommand(hub, buffer);
+}
+
+/**
+ * Set speeds for all motors (array of 4 signed shorts)
+ */
+export async function setMotorSpeeds(hub: Hub, speeds: [number, number, number, number]) {
+  const buffer = createCommandBuffer(Commands.SET_MOTOR_SPEEDS, speeds);
+  await writeStdinCommand(hub, buffer);
+}
+
+/**
+ * Stop all motors
+ */
+export async function stopAllMotors(hub: Hub) {
+  const buffer = createCommandBuffer(Commands.STOP_ALL_MOTORS);
+  await writeStdinCommand(hub, buffer);
+}
+
+/**
+ * Set the light color (index)
+ */
+export async function setLight(hub: Hub, colorIndex: number) {
+  const buffer = createCommandBuffer(Commands.SET_LIGHT, [colorIndex]);
+  await writeStdinCommand(hub, buffer);
+}
+
 export async function disconnect(hub: Hub) {
-  if (HubUtils.isConnected(hub)) {
+  if (DeviceUtls.isConnected(hub.device)) {
     try {
       await PybricksCommands.stopUserProgram(hub.device);
     } catch {
@@ -42,14 +83,14 @@ export async function disconnect(hub: Hub) {
 }
 
 export async function startRepl(hub: Hub) {
-  HubUtils.assertConnected(hub);
+  DeviceUtls.assertConnected(hub.device);
   await PybricksCommands.startReplUserProgram(hub.device);
   await waitForReplReady(hub);
 }
 
 function waitForReplReady(hub: Hub) {
   return new Promise<void>((resolve) => {
-    HubUtils.assertConnected(hub);
+    DeviceUtls.assertConnected(hub.device);
 
     const listener = (event: Event) => {
       const target = event.target as BluetoothRemoteGATTCharacteristic;
@@ -68,7 +109,8 @@ function waitForReplReady(hub: Hub) {
 }
 
 export async function writeStdinWithResponse(hub: Hub, message: string) {
-  HubUtils.assertWithCapabilities(hub);
+  DeviceUtls.assertConnected(hub.device);
+  HubUtils.assertCapabilities(hub);
   const commands = PybricksCommands.createWriteStdinCommands(message, hub.capabilities.maxWriteSize);
   return await PybricksCommands.writeCommandsWithResponse(hub.device, commands);
 }
@@ -83,31 +125,10 @@ export async function writeStdinWithResponse(hub: Hub, message: string) {
  * @param offset Offset in the AppData buffer (default 0)
  */
 export async function writeAppData(hub: Hub, data: ArrayBuffer, offset: number = 0) {
-  HubUtils.assertWithCapabilities(hub);
+  DeviceUtls.assertConnected(hub.device);
+  HubUtils.assertCapabilities(hub);
   const commands = PybricksCommands.createWriteAppDataCommands(data, hub.capabilities.maxWriteSize, offset);
   return await PybricksCommands.writeCommandsWithResponse(hub.device, commands);
-}
-
-export async function turnLightOn(hub: Hub) {
-  await writeStdinWithResponse(hub, "hub.light.on(Color.GREEN)\r\n");
-}
-
-/**
- * Shutdown the hub using the AppData protocol.
- */
-export async function hubShutdown(hub: Hub) {
-  const buffer = createCommandBuffer(Commands.HUB_SHUTDOWN);
-  await writeAppData(hub, buffer);
-}
-
-/**
- * Set the hub light color using the AppData protocol.
- * @param hub The connected hub
- * @param colorIndex Color index (0=NONE/off, 1=BLACK, 2=RED, 3=ORANGE, 4=YELLOW, 5=GREEN, 6=CYAN, 7=BLUE, 8=VIOLET, 9=MAGENTA)
- */
-export async function lightSet(hub: Hub, colorIndex: number) {
-  const buffer = createCommandBuffer(Commands.LIGHT_SET, colorIndex);
-  await writeAppData(hub, buffer);
 }
 
 export async function enterPasteMode(hub: Hub) {
@@ -116,18 +137,4 @@ export async function enterPasteMode(hub: Hub) {
 
 export async function exitPasteMode(hub: Hub) {
   await writeStdinWithResponse(hub, "\x04\r\n");
-}
-
-/**
- * Simulated hub disconnect - simulates disconnect with delay
- */
-export async function simulatedDisconnect() {
-  await new Promise((resolve) => setTimeout(resolve, 150));
-}
-
-/**
- * Simulated hub shutdown - simulates shutdown with delay
- */
-export async function simulatedHubShutdown() {
-  await new Promise((resolve) => setTimeout(resolve, 150));
 }

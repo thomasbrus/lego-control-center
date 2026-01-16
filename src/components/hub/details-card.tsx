@@ -1,4 +1,5 @@
 import { Badge, Button, Card, Group, Table } from "@/components/ui";
+import * as HubCommands from "@/lib/hub/commands";
 import * as HubHooks from "@/lib/hub/hooks";
 import { Hub, HubStatus } from "@/lib/hub/types";
 import * as HubUtils from "@/lib/hub/utils";
@@ -10,24 +11,22 @@ export function DetailsCard({ hub }: { hub: Hub }) {
   const { disconnect } = simulated ? SimulatedHubHooks.useHub() : HubHooks.useHub();
 
   function handleShutdown() {
-    // Placeholder for shutdown logic
+    HubCommands.shutdownHub(hub);
   }
 
   async function handleDisconnect() {
     await disconnect(hub);
   }
 
-  const actionsDisabled = !HubUtils.isConnected(hub);
-
   return (
     <Card.Root>
       <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
         <Card.Title>{hub.name}</Card.Title>
         <Group attached>
-          <Button size="xs" variant="surface" colorPalette="[danger]" onClick={handleShutdown} disabled={actionsDisabled}>
+          <Button size="xs" variant="surface" colorPalette="[danger]" onClick={handleShutdown} disabled={!HubUtils.isConnected(hub)}>
             Shutdown
           </Button>
-          <Button size="xs" variant="surface" onClick={handleDisconnect} disabled={actionsDisabled}>
+          <Button size="xs" variant="surface" onClick={handleDisconnect} disabled={!HubUtils.isConnected(hub)}>
             Disconnect
           </Button>
         </Group>
@@ -46,7 +45,7 @@ export function DetailsCard({ hub }: { hub: Hub }) {
                 <StatusBadge status={hub.status} />
               </Table.Cell>
               <Table.Cell textAlign="right" fontVariantNumeric="tabular-nums">
-                {HubUtils.isWithCapabilities(hub) ? hub.capabilities.maxWriteSize : "—"}
+                {hub?.capabilities?.maxWriteSize ?? "—"}
               </Table.Cell>
             </Table.Row>
           </Table.Body>
@@ -70,12 +69,12 @@ function StatusBadge({ status }: { status: HubStatus }) {
       return <Badge colorPalette="yellow">Retrieving capabilities...</Badge>;
     case HubStatus.StartingRepl:
       return <Badge colorPalette="yellow">Starting REPL...</Badge>;
-    case HubStatus.UploadingProgram:
-      return <Badge colorPalette="yellow">Uploading program...</Badge>;
-    case HubStatus.StartingProgram:
-      return <Badge colorPalette="yellow">Starting program...</Badge>;
+    case HubStatus.LaunchingProgram:
+      return <Badge colorPalette="yellow">Launching program...</Badge>;
     case HubStatus.Ready:
       return <Badge colorPalette="green">Ready</Badge>;
+    case HubStatus.Running:
+      return <Badge colorPalette="green">Running</Badge>;
     case HubStatus.Error:
       return <Badge colorPalette="red">Error</Badge>;
     default:

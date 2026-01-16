@@ -1,4 +1,5 @@
-import * as HubActions from "@/lib/hub/actions";
+import * as DeviceUtls from "@/lib/device/utils";
+import * as HubCommands from "@/lib/hub/commands";
 import * as HubUtils from "@/lib/hub/utils";
 import { useCallback, useContext, useRef } from "react";
 import * as NotificationParsing from "../notification/parsing";
@@ -53,7 +54,7 @@ export function useHub() {
         onTelemetryEvent: (event: TelemetryEvent) => void;
       }
     ) => {
-      HubUtils.assertConnected(hub);
+      DeviceUtls.assertConnected(hub.device);
 
       const startingNotificationsHub = updateHub(hub.id, { ...hub, status: HubStatus.StartingNotifications });
       const characteristic = await PybricksCommands.getPybricksControlCharacteristic(hub.device);
@@ -93,7 +94,7 @@ export function useHub() {
   );
 
   const stopNotifications = useCallback(async (hub: Hub) => {
-    if (!HubUtils.isConnected(hub)) return;
+    if (!DeviceUtls.isConnected(hub.device)) return;
 
     const characteristic = await PybricksCommands.getPybricksControlCharacteristic(hub.device);
     await characteristic.stopNotifications();
@@ -107,7 +108,7 @@ export function useHub() {
 
   const retrieveCapabilities = useCallback(
     async (hub: Hub) => {
-      HubUtils.assertConnected(hub);
+      DeviceUtls.assertConnected(hub.device);
 
       const retrievingCapabilitiesHub = updateHub(hub.id, { ...hub, status: HubStatus.RetrievingCapabilities });
       const characteristic = await PybricksCommands.getPybricksHubCapabilitiesCharacteristic(hub.device);
@@ -124,7 +125,7 @@ export function useHub() {
   const startRepl = useCallback(
     async (hub: Hub) => {
       const startingReplHub = updateHub(hub.id, { ...hub, status: HubStatus.StartingRepl });
-      await HubActions.startRepl(hub);
+      await HubCommands.startRepl(hub);
 
       return updateHub(hub.id, { ...startingReplHub, status: HubStatus.Ready });
     },
@@ -133,17 +134,15 @@ export function useHub() {
 
   const launchProgram = useCallback(
     async (hub: Hub) => {
-      HubUtils.assertConnected(hub);
+      DeviceUtls.assertConnected(hub.device);
 
-      const uploadingProgramHub = updateHub(hub.id, { ...hub, status: HubStatus.UploadingProgram });
+      const launcningProgramHub = updateHub(hub.id, { ...hub, status: HubStatus.LaunchingProgram });
 
-      await HubActions.enterPasteMode(hub);
-      await HubActions.writeStdinWithResponse(hub, programMain);
-      await HubActions.exitPasteMode(hub);
+      await HubCommands.enterPasteMode(hub);
+      await HubCommands.writeStdinWithResponse(hub, programMain);
+      await HubCommands.exitPasteMode(hub);
 
-      // TODO: Start program
-
-      return updateHub(hub.id, { ...uploadingProgramHub, status: HubStatus.Ready });
+      return updateHub(hub.id, { ...launcningProgramHub, status: HubStatus.Running });
     },
     [updateHub]
   );
@@ -152,7 +151,7 @@ export function useHub() {
     async (hub: Hub) => {
       if (HubUtils.isConnected(hub)) {
         await stopNotifications(hub);
-        await HubActions.disconnect(hub);
+        await HubCommands.disconnect(hub);
         return disconnectHub(hub.id);
       }
     },
