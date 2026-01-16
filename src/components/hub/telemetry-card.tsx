@@ -34,7 +34,6 @@ export function TelemetryCard({ telemetryEvents }: { telemetryEvents: TelemetryE
                   <Table.Header>Battery</Table.Header>
                   <Table.Header>Motor Angles</Table.Header>
                   <Table.Header>Motor Speeds</Table.Header>
-                  <Table.Header>Light</Table.Header>
                 </Table.Row>
               </Table.Head>
               <Table.Body>
@@ -44,7 +43,6 @@ export function TelemetryCard({ telemetryEvents }: { telemetryEvents: TelemetryE
                     <Table.Cell>{telemetryEvent.hubBattery}%</Table.Cell>
                     <Table.Cell fontSize="xs">{telemetryEvent.motorAngles.join(", ")}</Table.Cell>
                     <Table.Cell fontSize="xs">{telemetryEvent.motorSpeeds.join(", ")}</Table.Cell>
-                    <Table.Cell>{telemetryEvent.lightStatus}</Table.Cell>
                   </Table.Row>
                 ))}
               </Table.Body>

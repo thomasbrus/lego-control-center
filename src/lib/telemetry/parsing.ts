@@ -3,7 +3,7 @@ import { TelemetryEvent } from "./types";
 /**
  * Parses a telemetry event from raw AppData bytes.
  *
- * Format: [HubBattery(B), ...4xMotorAngle(h), ...4xMotorSpeed(h), LightStatus(B)]
+ * Format: [HubBattery(B), ...4xMotorAngle(h), ...4xMotorSpeed(h)]
  * Struct format: "<BhhhhhhhhB"
  *
  * @param buffer The raw ArrayBuffer from WriteAppData event
@@ -21,12 +21,9 @@ export function parseTelemetryEvent(buffer: ArrayBuffer): TelemetryEvent {
   // 4x Motor speeds (h - signed 16-bit int)
   const motorSpeeds = [view.getInt16(9, true), view.getInt16(11, true), view.getInt16(13, true), view.getInt16(15, true)];
 
-  const lightStatus = view.getUint8(17); // B - unsigned byte
-
   return {
     hubBattery,
     motorAngles,
     motorSpeeds,
-    lightStatus,
   };
 }

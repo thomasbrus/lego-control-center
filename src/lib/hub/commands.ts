@@ -8,7 +8,7 @@ import { Hub } from "./types";
 /**
  * Command IDs for the stdin protocol (must match hub firmware)
  */
-export enum Commands {
+export enum CommandType {
   SHUTDOWN_HUB = 0x10,
   SET_MOTOR_SPEEDS = 0x20,
   STOP_ALL_MOTORS = 0x21,
@@ -19,10 +19,10 @@ export enum Commands {
  * Creates a command buffer matching the protocol format: <Bhhhh>
  * (1 byte command + 4 signed shorts for args)
  */
-function createCommandBuffer(command: Commands, args: number[] = []): ArrayBuffer {
+function createCommandBuffer(commandType: CommandType, args: number[] = []): ArrayBuffer {
   const buffer = new ArrayBuffer(9);
   const view = new DataView(buffer);
-  view.setUint8(0, command);
+  view.setUint8(0, commandType);
   for (let i = 0; i < 4; i++) {
     view.setInt16(1 + i * 2, args[i] ?? 0, true);
   }
@@ -42,7 +42,7 @@ export async function writeStdinCommand(hub: Hub, buffer: ArrayBuffer) {
  * Shutdown the hub (writes 9 bytes to stdin)
  */
 export async function shutdownHub(hub: Hub) {
-  const buffer = createCommandBuffer(Commands.SHUTDOWN_HUB);
+  const buffer = createCommandBuffer(CommandType.SHUTDOWN_HUB);
   await writeStdinCommand(hub, buffer);
 }
 
@@ -50,7 +50,7 @@ export async function shutdownHub(hub: Hub) {
  * Set speeds for all motors (array of 4 signed shorts)
  */
 export async function setMotorSpeeds(hub: Hub, speeds: [number, number, number, number]) {
-  const buffer = createCommandBuffer(Commands.SET_MOTOR_SPEEDS, speeds);
+  const buffer = createCommandBuffer(CommandType.SET_MOTOR_SPEEDS, speeds);
   await writeStdinCommand(hub, buffer);
 }
 
@@ -58,7 +58,7 @@ export async function setMotorSpeeds(hub: Hub, speeds: [number, number, number, 
  * Stop all motors
  */
 export async function stopAllMotors(hub: Hub) {
-  const buffer = createCommandBuffer(Commands.STOP_ALL_MOTORS);
+  const buffer = createCommandBuffer(CommandType.STOP_ALL_MOTORS);
   await writeStdinCommand(hub, buffer);
 }
 
@@ -66,7 +66,7 @@ export async function stopAllMotors(hub: Hub) {
  * Set the light color (index)
  */
 export async function setLight(hub: Hub, colorIndex: number) {
-  const buffer = createCommandBuffer(Commands.SET_LIGHT, [colorIndex]);
+  const buffer = createCommandBuffer(CommandType.SET_LIGHT, [colorIndex]);
   await writeStdinCommand(hub, buffer);
 }
 
