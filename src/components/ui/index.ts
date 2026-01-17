@@ -18,3 +18,4 @@ export * as Switch from "./switch";
 export * as Table from "./table";
 export * as Tabs from "./tabs";
 export { Text, type TextProps } from "./text";
+export { Tooltip, type TooltipProps } from "./tooltip";

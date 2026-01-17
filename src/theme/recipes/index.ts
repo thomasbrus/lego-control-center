@@ -1,3 +1,4 @@
+import { tooltip } from "./tooltip";
 import { tabs } from "./tabs";
 import { select } from "./select";
 import { switchRecipe } from "./switch";
@@ -34,6 +35,7 @@ export const recipes = {
   segmentGroup,
   switchRecipe,
   select,
-  tabs
+  tabs,
+  tooltip
 }
 export const slotRecipes = {}

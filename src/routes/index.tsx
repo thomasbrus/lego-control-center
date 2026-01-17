@@ -1,5 +1,5 @@
 import * as HubComponents from "@/components/hub";
-import { Button, IconButton, Tabs } from "@/components/ui";
+import { Button, IconButton, Tabs, Tooltip } from "@/components/ui";
 import * as HubCommands from "@/lib/hub/commands";
 import { HubsProvider } from "@/lib/hub/context";
 import { useHubsContext } from "@/lib/hub/hooks";
@@ -57,24 +57,25 @@ function Main() {
 
   return (
     <div>
-      <Tabs.Root value={tab} onValueChange={(details) => setTab(details.value)}>
-        <Tabs.List>
+      <Tabs.Root size="lg" value={tab} onValueChange={(details) => setTab(details.value)}>
+        <Tabs.List px="8" position="sticky" top="0" zIndex="docked" bg="white" shadow="xs" borderBottomWidth="0">
           {hubs.map((hub) => (
             <Tabs.Trigger key={hub.id} value={hub.id}>
               {hub.name}
-              <IconButton
-                as="span"
-                size="xs"
-                variant="plain"
-                onClick={(event) => !closeDisabled && handleTabClose(event, hub)}
-                disabled={closeDisabled}
-              >
-                <XIcon />
-              </IconButton>
+              <Tooltip content={HubUtils.isConnected(hub) ? "Disconnect" : "Close"}>
+                <IconButton
+                  as="span"
+                  size="xs"
+                  variant="plain"
+                  onClick={(event) => !closeDisabled && handleTabClose(event, hub)}
+                  disabled={closeDisabled}
+                >
+                  <XIcon />
+                </IconButton>
+              </Tooltip>
             </Tabs.Trigger>
           ))}
-          <Tabs.Indicator />
-          <Button colorPalette="[primary]" variant="plain" onClick={handleAddHub}>
+          <Button colorPalette="[primary]" variant="plain" onClick={handleAddHub} h="11" fontSize="md">
             Add
             <PlusIcon />
           </Button>
@@ -113,7 +114,13 @@ function HubDashboard({ hub }: { hub: Hub }) {
   }
 
   return (
-    <styled.main p="8" display="grid" gridTemplateColumns={{ md: "repeat(2, minmax(0, 1fr))", lg: "repeat(3, minmax(0, 1fr))" }} gap="6">
+    <styled.main
+      p="8"
+      display="grid"
+      gridTemplateColumns={{ md: "repeat(2, minmax(0, 1fr))", lg: "repeat(3, minmax(0, 1fr))" }}
+      gap="6"
+      alignItems="start"
+    >
       {hub.status === HubStatus.Idle ? (
         <HubComponents.ConnectCard
           hub={hub}

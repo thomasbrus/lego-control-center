@@ -15,10 +15,11 @@ export const card = defineSlotRecipe({
       display: "flex",
       flexDirection: "column",
       gap: "1",
-      p: "6",
+      px: "6",
+      py: "4",
       pb: {
         base: "2",
-        "&:only-child": "6",
+        "&:only-child": "4",
       },
     },
     body: {
@@ -30,12 +31,10 @@ export const card = defineSlotRecipe({
     footer: {
       display: "flex",
       justifyContent: "flex-end",
+      bg: "gray.2",
       gap: "3",
-      p: "6",
-      pt: {
-        base: "2",
-        "&:only-child": "6",
-      },
+      px: "6",
+      py: "4",
     },
     title: {
       textStyle: "lg",

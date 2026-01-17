@@ -43,25 +43,26 @@ function RootComponent() {
   const { simulated, setSimulated } = useModeContext();
 
   return (
-    <styled.div bg="gray.2" minH="dvh">
+    <styled.div bg="gray.2" position="fixed" inset="0" display="grid" gridTemplateRows="auto 1fr">
       <styled.header
-        bg="gray.surface.bg"
-        p="8"
+        bg="colorPalette.10"
+        color="colorPalette.12"
+        px="8"
+        py="6"
         borderBottomWidth="1"
-        borderColor="border"
-        pos="sticky"
+        borderColor="colorPalette.6"
         top="0"
-        zIndex="docked"
         display="flex"
         alignItems="center"
-        gap="3"
+        gap="4"
+        colorPalette="[primary]"
       >
         <Heading>LEGO Control Center</Heading>
         <Switch.Root
           checked={!simulated}
           onCheckedChange={(details) => setSimulated(!details.checked)}
-          size="xs"
-          colorPalette="green"
+          size="sm"
+          colorPalette="gray"
           cursor="pointer"
         >
           <Switch.Control>
@@ -71,8 +72,9 @@ function RootComponent() {
           <Switch.HiddenInput />
         </Switch.Root>
       </styled.header>
-
-      <Outlet />
+      <styled.main overflow="auto">
+        <Outlet />
+      </styled.main>
     </styled.div>
   );
 }
