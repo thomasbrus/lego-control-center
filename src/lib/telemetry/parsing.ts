@@ -9,6 +9,12 @@ export function parseTelemetryEvent(buffer: ArrayBuffer): TelemetryEvent {
   const telemetryType = view.getUint8(0);
 
   switch (telemetryType) {
+    case 0x10: // HUB_INFO
+      // <BB: TelemetryType, HubType
+      return {
+        type: "HubInfo",
+        hubType: view.getUint8(1),
+      };
     case 0x11: // HUB_STATUS
       // <BB: TelemetryType, BatteryPercentage
       return {
@@ -23,7 +29,16 @@ export function parseTelemetryEvent(buffer: ArrayBuffer): TelemetryEvent {
         roll: view.getInt16(3, true),
         yaw: view.getInt16(5, true),
       };
-    case 0x20: // MOTOR_STATUS
+    case 0x20: // MOTOR_LIMITS
+      // <BBhhh: TelemetryType, PortIndex, Speed, Acceleration, Torque
+      return {
+        type: "MotorLimits",
+        portIndex: view.getUint8(1),
+        speed: view.getInt16(2, true),
+        acceleration: view.getInt16(4, true),
+        torque: view.getInt16(6, true),
+      };
+    case 0x21: // MOTOR_STATUS
       // <BBhhh?: TelemetryType, PortIndex, Angle, Speed, Load, IsStalled
       return {
         type: "MotorStatus",

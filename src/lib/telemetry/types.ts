@@ -1,4 +1,9 @@
-export type TelemetryType = "HubStatus" | "HubIMU" | "MotorStatus" | "SensorStatus";
+export type TelemetryType = "HubInfo" | "HubStatus" | "HubIMU" | "MotorLimits" | "MotorStatus" | "SensorStatus";
+
+export interface HubInfoTelemetry {
+  type: "HubInfo";
+  hubType: number;
+}
 
 export interface HubStatusTelemetry {
   type: "HubStatus";
@@ -10,6 +15,14 @@ export interface HubIMUTelemetry {
   pitch: number;
   roll: number;
   yaw: number;
+}
+
+export interface MotorLimitsTelemetry {
+  type: "MotorLimits";
+  portIndex: number;
+  speed: number;
+  acceleration: number;
+  torque: number;
 }
 
 export interface MotorStatusTelemetry {
@@ -31,4 +44,10 @@ export interface SensorStatusTelemetry {
   value: number;
 }
 
-export type TelemetryEvent = HubStatusTelemetry | HubIMUTelemetry | MotorStatusTelemetry | SensorStatusTelemetry;
+export type TelemetryEvent =
+  | HubInfoTelemetry
+  | HubStatusTelemetry
+  | HubIMUTelemetry
+  | MotorLimitsTelemetry
+  | MotorStatusTelemetry
+  | SensorStatusTelemetry;

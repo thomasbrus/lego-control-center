@@ -34,6 +34,10 @@ def discover_device_on_port(port, *device_classes):
 def discover_devices(*device_classes):
     return [discover_device_on_port(p, *device_classes) for p in PORTS]
 
+HUB_TYPES = {
+    TechnicHub: 0
+}
+
 class HubController:
     __slots__ = ("hub", "COLORS", "MIN_VOLTAGE", "MAX_VOLTAGE")
 
@@ -62,6 +66,9 @@ class HubController:
     def set_light(self, index):
         self.hub.light.on(self.COLORS[index])
 
+    def hub_type(self):
+        return HUB_TYPES[type(self.hub)]
+
     def battery_percentage(self):
         voltage = self.hub.battery.voltage()
         value = int((voltage - self.MIN_VOLTAGE) * 100 / (self.MAX_VOLTAGE - self.MIN_VOLTAGE))
@@ -82,6 +89,11 @@ class MotorsController:
     def stop_all(self):
         for motor in self.motors:
             motor.stop()
+
+    def read_limits(self):
+        for port_index, motor in enumerate(self.motors):
+            if motor:
+                yield port_index, motor.control.limits()
 
     def read_states(self):
         for port_index, motor in enumerate(self.motors):
@@ -175,13 +187,19 @@ class CommandHandler:
 
 export const programMain2 = `
 class TelemetryType:
+    HUB_INFO = const(0x10)
     HUB_STATUS = const(0x11)
     HUB_IMU = const(0x12)
-    MOTOR_STATUS = const(0x20)
+    MOTOR_LIMITS = const(0x20)
+    MOTOR_STATUS = const(0x21)
     SENSOR_STATUS = const(0x30)
 
 class TelemetryProtocol:
     MAX_SIZE = calcsize("<BBBhhhh")
+
+    # [TelemetryType(B), HubType(B)]
+    HUB_INFO_FORMAT = "<BB"
+    HUB_INFO_SIZE = calcsize(HUB_INFO_FORMAT)
 
     # [TelemetryType(B), BatteryPercentage(B)]
     HUB_STATUS_FORMAT = "<BB"
@@ -190,6 +208,10 @@ class TelemetryProtocol:
     # [TelemetryType(B), Pitch(h), Roll(h), Yaw(h)]
     HUB_IMU_FORMAT = "<Bhhh"
     HUB_IMU_SIZE = calcsize(HUB_IMU_FORMAT)
+
+    # [TelemetryType(B), PortIndex(B), Speed(h), Acceleration(h), torque(h)]
+    MOTOR_LIMITS_FORMAT = "<BBhhh"
+    MOTOR_LIMITS_SIZE = calcsize(MOTOR_LIMITS_FORMAT)
 
     # [TelemetryType(B), PortIndex(B), Angle(h), Speed(h), Load(h), IsStalled(B)]
     MOTOR_STATUS_FORMAT = "<BBhhhB"
@@ -204,6 +226,17 @@ class TelemetryCollector:
 
     def __init__(self):
         self.payload = bytearray(TelemetryProtocol.MAX_SIZE)
+
+    def collect_hub_info(self):
+        pack_into(
+            TelemetryProtocol.HUB_INFO_FORMAT,
+            self.payload,
+            0,
+            TelemetryType.HUB_INFO,
+            hub_controller.hub_type()
+        )
+
+        return bytes(self.payload)[:TelemetryProtocol.HUB_INFO_SIZE]
 
     def collect_hub_status(self):
         pack_into(
@@ -231,6 +264,21 @@ class TelemetryCollector:
         )
 
         return bytes(self.payload)[:TelemetryProtocol.HUB_IMU_SIZE]
+
+    def collect_motor_limits(self):
+        for port_index, motor_limits in motors_controller.read_limits():
+            pack_into(
+                TelemetryProtocol.MOTOR_LIMITS_FORMAT,
+                self.payload,
+                0,
+                TelemetryType.MOTOR_LIMITS,
+                port_index,
+                motor_limits[0],
+                motor_limits[1],
+                motor_limits[2]
+            )
+
+            yield bytes(self.payload)[:TelemetryProtocol.MOTOR_LIMITS_SIZE]
 
     def collect_motor_statuses(self):
         for port_index, motor_status in motors_controller.read_states():
@@ -279,6 +327,12 @@ async def process_app_data_command_loop():
         await wait(500)
 
 async def broadcast_telemetry_loop():
+    bytes = telemetry_collector.collect_hub_info()
+    await app_data.write_bytes(bytes)
+
+    for bytes in telemetry_collector.collect_motor_limits():
+        await app_data.write_bytes(bytes)
+
     while True:
         bytes = telemetry_collector.collect_hub_status()
         await app_data.write_bytes(bytes)
