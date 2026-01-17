@@ -104,16 +104,6 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
         phase: HubPhase.StartingRepl,
       });
 
-      const program = programMain1 + programMain2;
-      const programSize = program.length;
-      const chunkSize = programSize / 40;
-
-      for (let i = 0; i < programSize; i += chunkSize) {
-        const chunk = program.slice(i, i + chunkSize);
-        onTerminalOutputRefs.get(hub.id)!(chunk);
-        await delay(100);
-      }
-
       return replaceHub(hub.id, {
         ...startingReplHub,
         phase: HubPhase.Ready,
@@ -131,9 +121,19 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
         phase: HubPhase.LaunchingProgram,
       });
 
-      for (let i = 0; i <= 24; i++) {
-        options?.onProgress((i / 24) * 100);
-        await delay(100);
+      const program = programMain1 + programMain2;
+      const programSize = program.length;
+      const totalTime = 4000;
+      const numChunks = 36;
+      const chunkSize = programSize / numChunks;
+
+      options.onProgress(0);
+
+      for (let i = 0; i < numChunks; i += 1) {
+        const chunk = program.slice(i * chunkSize, (i + 1) * chunkSize);
+        onTerminalOutputRefs.get(hub.id)!(chunk);
+        await delay(totalTime / numChunks);
+        options.onProgress(((i + 1) / numChunks) * 100);
       }
 
       const runningHub = replaceHub(hub.id, {
@@ -142,26 +142,26 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
       });
 
       const telemetryEvents: TelemetryEvent[] = [
-        { type: "HubInfo", hubType: 0 },
+        { type: "HubInfo", hubType: { id: "technic-hub", name: "Technic Hub" } },
         { type: "MotorLimits", portIndex: 0, speed: 100, acceleration: 200, torque: 50 },
 
         { type: "HubPhase", batteryPercentage: 69 },
 
-        { type: "HubIMU", pitch: 13, roll: 37, yaw: 42 },
+        { type: "HubIMU", pitch: 13, roll: 37, heading: 42 },
         { type: "MotorStatus", portIndex: 0, angle: 1234, speed: 56, load: 78, isStalled: false },
         { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 100, hue: 120, saturation: 80, value: 90 },
 
-        { type: "HubIMU", pitch: 14, roll: 38, yaw: 43 },
+        { type: "HubIMU", pitch: 14, roll: 38, heading: 43 },
         { type: "MotorStatus", portIndex: 0, angle: 1240, speed: 60, load: 75, isStalled: false },
         { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 98, hue: 121, saturation: 81, value: 91 },
 
-        { type: "HubIMU", pitch: 15, roll: 42, yaw: 64 },
+        { type: "HubIMU", pitch: 15, roll: 42, heading: 64 },
         { type: "MotorStatus", portIndex: 0, angle: 1250, speed: 62, load: 70, isStalled: false },
         { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 95, hue: 122, saturation: 82, value: 92 },
 
         { type: "HubPhase", batteryPercentage: 68 },
 
-        { type: "HubIMU", pitch: 16, roll: 64, yaw: 128 },
+        { type: "HubIMU", pitch: 16, roll: 64, heading: 128 },
         { type: "MotorStatus", portIndex: 0, angle: 1260, speed: 65, load: 68, isStalled: false },
         { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 93, hue: 123, saturation: 83, value: 93 },
       ];
@@ -179,7 +179,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
   const disconnect = useCallback(
     async (hub: Hub) => {
       if (HubUtils.isConnected(hub)) {
-        onDisconnectRefs.get(hub.id)!();
+        onDisconnectRefs.get(hub.id)?.();
         await stopNotifications(hub);
         return disconnectHub(hub.id);
       }

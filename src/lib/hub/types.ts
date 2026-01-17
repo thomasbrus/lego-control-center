@@ -5,10 +5,10 @@ export type HubId = BluetoothDevice["id"];
 export interface Hub {
   id: HubId;
   name: string;
-  type?: number;
   phase: HubPhase;
   device?: BluetoothDevice;
   capabilities?: HubCapabilities;
+  type?: HubType;
   batteryPercentage?: number;
   motors?: Map<number, MotorModel>;
   imu?: HubIMU;
@@ -31,8 +31,13 @@ export interface HubCapabilities {
   maxWriteSize: number;
 }
 
+export interface HubType {
+  id: string;
+  name: string;
+}
+
 export interface HubIMU {
   pitch: number;
   roll: number;
-  yaw: number;
+  heading: number;
 }

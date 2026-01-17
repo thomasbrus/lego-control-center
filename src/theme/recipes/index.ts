@@ -1,3 +1,4 @@
+import { progress } from "./progress";
 import { absoluteCenter } from "./absolute-center";
 import { alert } from "./alert";
 import { angleSlider } from "./angle-slider";
@@ -8,6 +9,7 @@ import { group } from "./group";
 import { heading } from "./heading";
 import { icon } from "./icon";
 import { menu } from "./menu";
+import { propertyList } from "./property-list";
 import { radioCardGroup } from "./radio-card-group";
 import { scrollArea } from "./scroll-area";
 import { segmentGroup } from "./segment-group";
@@ -19,25 +21,27 @@ import { tabs } from "./tabs";
 import { text } from "./text";
 import { tooltip } from "./tooltip";
 export const recipes = {
-  angleSlider,
-  card,
-  button,
-  group,
   absoluteCenter,
-  spinner,
-  text,
-  heading,
   alert,
-  table,
+  angleSlider,
   badge,
-  menu,
+  button,
+  card,
+  group,
+  heading,
   icon,
+  menu,
+  propertyList,
   radioCardGroup,
   scrollArea,
   segmentGroup,
-  switchRecipe,
   select,
+  spinner,
+  switchRecipe,
+  table,
   tabs,
+  text,
   tooltip,
+  progress
 };
 export const slotRecipes = {};

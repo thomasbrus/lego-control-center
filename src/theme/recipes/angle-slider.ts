@@ -54,10 +54,13 @@ export const angleSlider = defineSlotRecipe({
     },
     valueText: {
       textStyle: "xl",
-      color: "colorPalette.10",
+      lineHeight: "tight",
+      fontWeight: "medium",
+      color: "colorPalette.11",
     },
     label: {
       textStyle: "sm",
+      color: "fg.muted",
     },
     ring: {
       width: "var(--angle-slider-size)",
@@ -73,7 +76,7 @@ export const angleSlider = defineSlotRecipe({
       strokeWidth: "var(--angle-slider-thickness)",
     },
     ringRange: {
-      stroke: "colorPalette.6",
+      stroke: "colorPalette.9",
       "--radius": "calc(var(--angle-slider-size) / 2 - var(--angle-slider-thickness) / 2)",
       cx: "calc(var(--angle-slider-size) / 2)",
       cy: "calc(var(--angle-slider-size) / 2)",

@@ -10,6 +10,8 @@ export { Icon, type IconProps } from "./icon";
 export { IconButton, type IconButtonProps } from "./icon-button";
 export { Loader, type LoaderProps } from "./loader";
 export * as Menu from "./menu";
+export * as Progress from "./progress";
+export * as PropertyList from "./property-list";
 export * as RadioCardGroup from "./radio-card-group";
 export * as ScrollArea from "./scroll-area";
 export * as SegmentGroup from "./segment-group";

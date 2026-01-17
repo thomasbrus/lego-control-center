@@ -62,7 +62,10 @@ export function Default<T>({ label, collection, children, ...props }: DefaultPro
       {label && <Label>{label}</Label>}
       <Control>
         <Trigger>
-          <ValueText />
+          <ValueText>
+            {/* @ts-expect-error */}
+            <Select.Context>{({ collection, value }) => value.map((v) => collection.find(v).label)}</Select.Context>
+          </ValueText>
           <IndicatorGroup>
             <Indicator />
           </IndicatorGroup>

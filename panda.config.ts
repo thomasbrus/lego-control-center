@@ -1,8 +1,13 @@
 import { animationStyles } from "@/theme/animation-styles";
 import { blue } from "@/theme/colors/blue";
+import { cyan } from "@/theme/colors/cyan";
 import { green } from "@/theme/colors/green";
+import { neutral } from "@/theme/colors/neutral";
+import { orange } from "@/theme/colors/orange";
+import { purple } from "@/theme/colors/purple";
 import { red } from "@/theme/colors/red";
 import { sand } from "@/theme/colors/sand";
+import { violet } from "@/theme/colors/violet";
 import { yellow } from "@/theme/colors/yellow";
 import { conditions } from "@/theme/conditions";
 import { globalCss } from "@/theme/global-css";
@@ -81,11 +86,16 @@ export default defineConfig({
             },
           },
 
-          yellow: yellow,
-          gray: sand,
-          red: red,
-          green: green,
           blue: blue,
+          cyan: cyan,
+          gray: sand,
+          green: green,
+          orange: orange,
+          purple: purple,
+          red: red,
+          violet: violet,
+          yellow: yellow,
+          neutral: neutral,
 
           primary: yellow,
           info: blue,

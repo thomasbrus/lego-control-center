@@ -1,8 +1,10 @@
+import { HubType } from "../hub/types";
+
 export type TelemetryType = "HubInfo" | "HubPhase" | "HubIMU" | "MotorLimits" | "MotorStatus" | "SensorStatus";
 
 export interface HubInfoTelemetry {
   type: "HubInfo";
-  hubType: number;
+  hubType: HubType;
 }
 
 export interface HubPhaseTelemetry {
@@ -14,7 +16,7 @@ export interface HubIMUTelemetry {
   type: "HubIMU";
   pitch: number;
   roll: number;
-  yaw: number;
+  heading: number;
 }
 
 export interface MotorLimitsTelemetry {

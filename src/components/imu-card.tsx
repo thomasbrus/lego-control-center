@@ -1,10 +1,10 @@
 import { AngleSlider, Card, Icon } from "@/components/ui";
 import { Hub } from "@/lib/hub/types";
 import { CompassIcon } from "lucide-react";
-import { Grid } from "styled-system/jsx";
+import { Box, Grid } from "styled-system/jsx";
 
 export function IMUCard({ hub }: { hub: Hub }) {
-  const values = hub?.imu ?? { pitch: 0, roll: 0, yaw: 0 };
+  const values = hub?.imu ?? { pitch: 0, roll: 0, heading: 0 };
   const disabled = !hub?.imu;
 
   return (
@@ -18,11 +18,13 @@ export function IMUCard({ hub }: { hub: Hub }) {
         </Card.Title>
       </Card.Header>
       <Card.Body>
-        <Grid gridTemplateColumns="repeat(auto-fit, minmax(96px, 1fr))" gap="4">
-          <AngleSlider.Default disabled={disabled} readOnly label="Pitch" value={values.pitch} colorPalette="red" />
-          <AngleSlider.Default disabled={disabled} readOnly label="Roll" value={values.roll} colorPalette="green" />
-          <AngleSlider.Default disabled={disabled} readOnly label="Yaw" value={values.yaw} colorPalette="blue" />
-        </Grid>
+        <Box p="4" py="8" borderRadius="l2" bg="gray.2" justifyContent="space-around" gap="4" alignItems="center">
+          <Grid gridTemplateColumns="repeat(auto-fit, minmax(96px, 1fr))" gap="4" maxW="sm" mx="auto">
+            <AngleSlider.Default disabled={disabled} readOnly label="Pitch" value={values.pitch} colorPalette="[green]" />
+            <AngleSlider.Default disabled={disabled} readOnly label="Roll" value={values.roll} colorPalette="[green]" />
+            <AngleSlider.Default disabled={disabled} readOnly label="Heading" value={values.heading} colorPalette="[green]" />
+          </Grid>
+        </Box>
       </Card.Body>
     </Card.Root>
   );

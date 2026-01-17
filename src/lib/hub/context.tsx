@@ -61,7 +61,7 @@ function applyTelemetryToModel(prevHub: Hub, event: TelemetryEvent): Hub {
       nextHub.imu = {
         pitch: event.pitch,
         roll: event.roll,
-        yaw: event.yaw,
+        heading: event.heading,
       };
       break;
 

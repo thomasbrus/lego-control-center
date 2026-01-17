@@ -35,7 +35,9 @@ def discover_devices(*device_classes):
     return [discover_device_on_port(p, *device_classes) for p in PORTS]
 
 HUB_TYPES = {
-    TechnicHub: 0
+    TechnicHub: 2,
+    InvenHorHub: 3,
+    PrimeHub: 4,
 }
 
 class HubController:
@@ -66,8 +68,16 @@ class HubController:
     def set_light(self, index):
         self.hub.light.on(self.COLORS[index])
 
+    def name(self):
+        return self.hub.system.info().name
+
     def hub_type(self):
-        return HUB_TYPES[type(self.hub)]
+        hub_cls = type(self.hub)
+
+        if hub_cls is PrimeHub and "inventor" in self.name().lower():
+                hub_cls = InvenHorHub
+
+        return HUB_TYPES[hub_cls]
 
     def battery_percentage(self):
         voltage = self.hub.battery.voltage()

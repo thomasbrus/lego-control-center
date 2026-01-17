@@ -1,3 +1,4 @@
+import { HubType } from "../hub/types";
 import { TelemetryEvent } from "./types";
 
 /**
@@ -13,7 +14,7 @@ export function parseTelemetryEvent(buffer: ArrayBuffer): TelemetryEvent {
       // <BB: TelemetryType, HubType
       return {
         type: "HubInfo",
-        hubType: view.getUint8(1),
+        hubType: parseHubType(view.getUint8(1)),
       };
     case 0x11: // HUB_STATUS
       // <BB: TelemetryType, BatteryPercentage
@@ -27,7 +28,7 @@ export function parseTelemetryEvent(buffer: ArrayBuffer): TelemetryEvent {
         type: "HubIMU",
         pitch: view.getInt16(1, true),
         roll: view.getInt16(3, true),
-        yaw: view.getInt16(5, true),
+        heading: view.getInt16(5, true),
       };
     case 0x20: // MOTOR_LIMITS
       // <BBhhh: TelemetryType, PortIndex, Speed, Acceleration, Torque
@@ -61,5 +62,18 @@ export function parseTelemetryEvent(buffer: ArrayBuffer): TelemetryEvent {
       };
     default:
       throw new Error("Unknown telemetry type: " + telemetryType);
+  }
+}
+
+function parseHubType(value: number): HubType {
+  switch (value) {
+    case 2:
+      return { id: "technic-hub", name: "Technic Hub" };
+    case 3:
+      return { id: "invenhor-hub", name: "InvenHor Hub" };
+    case 4:
+      return { id: "invenhor-hub", name: "InvenHor Hub" };
+    default:
+      throw new Error("Unknown hub type: " + value);
   }
 }
