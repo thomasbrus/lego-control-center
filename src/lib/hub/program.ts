@@ -35,9 +35,9 @@ def discover_devices(*device_classes):
     return [discover_device_on_port(p, *device_classes) for p in PORTS]
 
 HUB_TYPES = {
-    TechnicHub: 2,
-    InvenHorHub: 3,
-    PrimeHub: 4,
+'<TechnicHub>': 2,
+    '<InventorHub>': 3,
+    '<PrimeHub>': 4,
 }
 
 class HubController:
@@ -72,12 +72,12 @@ class HubController:
         return self.hub.system.info().name
 
     def hub_type(self):
-        hub_cls = type(self.hub)
+        hub_str = str(self.hub)
 
-        if hub_cls is PrimeHub and "inventor" in self.name().lower():
-                hub_cls = InvenHorHub
+        if hub_str is '<PrimeHub>' and "inventor" in self.name().lower():
+                hub_str = '<InvenHorHub>'
 
-        return HUB_TYPES[hub_cls]
+        return HUB_TYPES[hub_str]
 
     def battery_percentage(self):
         voltage = self.hub.battery.voltage()
@@ -346,7 +346,7 @@ async def broadcast_telemetry_loop():
     while True:
         bytes = telemetry_collector.collect_hub_status()
         await app_data.write_bytes(bytes)
-        await wait(1000)
+        await wait(100)
 
         for i in range(10):
             bytes = telemetry_collector.collect_hub_imu()
@@ -358,7 +358,7 @@ async def broadcast_telemetry_loop():
             # for bytes in telemetry_collector.collect_sensor_statuses():
             #     await app_data.write_bytes(bytes)
 
-            await wait(1000)
+            await wait(100)
             gc.collect()
 
 async def main():

@@ -42,7 +42,7 @@ export function LegoControlCenter() {
   return (
     <div>
       <Tabs.Root size="lg" value={tab} onValueChange={(details) => setTab(details.value)}>
-        <Tabs.List px="8" position="sticky" top="0" zIndex="docked" bg="white" shadow="xs" borderBottomWidth="0">
+        <Tabs.List px="8" position="sticky" top="0" zIndex="docked" bg="white">
           {hubs.map((hub) => (
             <Tabs.Trigger key={hub.id} value={hub.id}>
               {hub.name}
@@ -59,7 +59,7 @@ export function LegoControlCenter() {
               </Tooltip>
             </Tabs.Trigger>
           ))}
-          <Button colorPalette="[primary]" variant="plain" onClick={handleAddHub} h="11" fontSize="md">
+          <Button variant="plain" onClick={handleAddHub} h="11" fontSize="md">
             Add
             <PlusIcon />
           </Button>

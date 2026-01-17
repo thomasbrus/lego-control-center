@@ -133,9 +133,9 @@ export async function writeAppData(hub: Hub, data: ArrayBuffer, offset: number =
 }
 
 export async function enterPasteMode(hub: Hub) {
-  await writeStdinWithResponse(hub, "\x05\r\n");
+  await writeStdinWithResponse(hub, "\x05");
 }
 
 export async function exitPasteMode(hub: Hub) {
-  await writeStdinWithResponse(hub, "\x04\r\n");
+  await writeStdinWithResponse(hub, "\x04");
 }

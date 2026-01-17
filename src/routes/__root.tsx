@@ -45,12 +45,12 @@ function RootComponent() {
   return (
     <styled.div bg="gray.2" position="fixed" inset="0" display="grid" gridTemplateRows="auto 1fr">
       <styled.header
-        bg="colorPalette.10"
-        color="colorPalette.12"
+        bg="white"
+        // color="colorPalette.12"
         px="8"
         py="6"
-        borderBottomWidth="1"
-        borderColor="colorPalette.6"
+        // borderBottomWidth="1"
+        // borderColor="colorPalette.6"
         top="0"
         display="flex"
         alignItems="center"
