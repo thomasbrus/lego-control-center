@@ -17,12 +17,7 @@ export function useHub() {
   const listenerRefs = useRef<Map<HubId, (event: Event) => void>>(new Map());
 
   const connect = useCallback(
-    async (
-      hub: Hub,
-      options: {
-        onDisconnect: () => void;
-      }
-    ) => {
+    async (hub: Hub, options: ConnectOptions) => {
       let device: BluetoothDevice;
 
       try {
@@ -43,55 +38,46 @@ export function useHub() {
 
       return updateHub(hub.id, { ...connectingHub, status: HubStatus.Connected });
     },
-    [updateHub]
+    [updateHub],
   );
 
-  const startNotifications = useCallback(
-    async (
-      hub: Hub,
-      options: {
-        onTerminalOutput: (output: string) => void;
-        onTelemetryEvent: (event: TelemetryEvent) => void;
-      }
-    ) => {
-      DeviceUtls.assertConnected(hub.device);
+  const startNotifications = useCallback(async (hub: Hub, options: StartNotificationsOptions) => {
+    DeviceUtls.assertConnected(hub.device);
 
-      const startingNotificationsHub = updateHub(hub.id, { ...hub, status: HubStatus.StartingNotifications });
-      const characteristic = await PybricksCommands.getPybricksControlCharacteristic(hub.device);
+    const startingNotificationsHub = updateHub(hub.id, { ...hub, status: HubStatus.StartingNotifications });
+    const characteristic = await PybricksCommands.getPybricksControlCharacteristic(hub.device);
 
-      const existingListener = listenerRefs.current.get(hub.id);
+    const existingListener = listenerRefs.current.get(hub.id);
 
-      if (existingListener) {
-        characteristic.removeEventListener("characteristicvaluechanged", existingListener);
-      }
+    if (existingListener) {
+      characteristic.removeEventListener("characteristicvaluechanged", existingListener);
+    }
 
-      // Just to be sure, see https://github.com/pybricks/pybricks-code/blob/a4aade5a29945f55a12608b43e3e62e9e333fc03/src/ble/sagas.ts#L353-L359
-      await characteristic.stopNotifications();
-      await characteristic.startNotifications();
+    // Just to be sure, see https://github.com/pybricks/pybricks-code/blob/a4aade5a29945f55a12608b43e3e62e9e333fc03/src/ble/sagas.ts#L353-L359
+    await characteristic.stopNotifications();
+    await characteristic.startNotifications();
 
-      const listener = (event: Event) => {
-        const value = (event.target as BluetoothRemoteGATTCharacteristic).value;
-        const notification = value && NotificationParsing.parseNotification(value, new Date());
+    const listener = (event: Event) => {
+      const value = (event.target as BluetoothRemoteGATTCharacteristic).value;
+      const notification = value && NotificationParsing.parseNotification(value, new Date());
 
-        if (notification) {
-          if (notification.eventType === EventType.WriteStdout) {
-            options.onTerminalOutput(notification.message);
-          }
-
-          if (notification.eventType === EventType.WriteAppData) {
-            const telemetryEvent = TelemetryParsing.parseTelemetryEvent(notification.data);
-            options.onTelemetryEvent(telemetryEvent);
-          }
+      if (notification) {
+        if (notification.eventType === EventType.WriteStdout) {
+          options.onTerminalOutput(notification.message);
         }
-      };
 
-      listenerRefs.current.set(hub.id, listener);
-      characteristic.addEventListener("characteristicvaluechanged", listener);
+        if (notification.eventType === EventType.WriteAppData) {
+          const telemetryEvent = TelemetryParsing.parseTelemetryEvent(notification.data);
+          options.onTelemetryEvent(telemetryEvent);
+        }
+      }
+    };
 
-      return updateHub(hub.id, { ...startingNotificationsHub, status: HubStatus.Ready });
-    },
-    []
-  );
+    listenerRefs.current.set(hub.id, listener);
+    characteristic.addEventListener("characteristicvaluechanged", listener);
+
+    return updateHub(hub.id, { ...startingNotificationsHub, status: HubStatus.Ready });
+  }, []);
 
   const stopNotifications = useCallback(async (hub: Hub) => {
     if (!DeviceUtls.isConnected(hub.device)) return;
@@ -119,7 +105,7 @@ export function useHub() {
 
       return updateHub(hub.id, { ...retrievingCapabilitiesHub, status: HubStatus.Ready, capabilities });
     },
-    [updateHub]
+    [updateHub],
   );
 
   const startRepl = useCallback(
@@ -129,26 +115,30 @@ export function useHub() {
 
       return updateHub(hub.id, { ...startingReplHub, status: HubStatus.Ready });
     },
-    [updateHub]
+    [updateHub],
   );
 
   const launchProgram = useCallback(
-    async (hub: Hub) => {
+    async (hub: Hub, options: { onProgress: (progress: number) => void }) => {
       DeviceUtls.assertConnected(hub.device);
 
       const launcningProgramHub = updateHub(hub.id, { ...hub, status: HubStatus.LaunchingProgram });
 
-      await HubCommands.enterPasteMode(hub);
-      await HubCommands.writeStdinWithResponse(hub, programMain1);
-      await HubCommands.exitPasteMode(hub);
+      const programs = [programMain1, programMain2];
 
-      await HubCommands.enterPasteMode(hub);
-      await HubCommands.writeStdinWithResponse(hub, programMain2);
-      await HubCommands.exitPasteMode(hub);
+      for (let i = 0; i < programs.length; i++) {
+        function handleProgress(progress: number) {
+          options?.onProgress((i + progress) / programs.length);
+        }
+
+        await HubCommands.enterPasteMode(hub);
+        await HubCommands.writeStdinWithResponse(hub, programMain1, { onProgress: handleProgress });
+        await HubCommands.exitPasteMode(hub);
+      }
 
       return updateHub(hub.id, { ...launcningProgramHub, status: HubStatus.Running });
     },
-    [updateHub]
+    [updateHub],
   );
 
   const disconnect = useCallback(
@@ -159,7 +149,7 @@ export function useHub() {
         return disconnectHub(hub.id);
       }
     },
-    [updateHub]
+    [updateHub],
   );
 
   return {
@@ -178,3 +168,13 @@ export function useHubsContext() {
   if (!value) throw new Error("HubsContext missing");
   return value;
 }
+
+export type DisconnectHandler = () => void;
+export type ConnectOptions = { onDisconnect: DisconnectHandler };
+
+export type TerminalOutputHandler = (output: string) => void;
+export type TelemetryEventHandler = (event: TelemetryEvent) => void;
+export type StartNotificationsOptions = { onTerminalOutput: TerminalOutputHandler; onTelemetryEvent: TelemetryEventHandler };
+
+export type LaunchProgramProgressHandler = (progress: number) => void;
+export type LaunchProgramOptions = { onProgress: LaunchProgramProgressHandler };

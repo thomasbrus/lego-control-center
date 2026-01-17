@@ -6,7 +6,7 @@ import * as HubUtils from "@/lib/hub/utils";
 import { useModeContext } from "@/lib/mode/hooks";
 import * as SimulatedHubHooks from "@/lib/simulated-hub/hooks";
 
-export function DetailsCard({ hub }: { hub: Hub }) {
+export function DetailsCard({ hub, launchProgramProgress }: { hub: Hub; launchProgramProgress: number }) {
   const { simulated } = useModeContext();
   const { disconnect } = simulated ? SimulatedHubHooks.useHub() : HubHooks.useHub();
 
@@ -36,7 +36,7 @@ export function DetailsCard({ hub }: { hub: Hub }) {
           <Table.Head>
             <Table.Row>
               <Table.Header>Status</Table.Header>
-              <Table.Header textAlign="right">Max Write Size</Table.Header>
+              <Table.Header textAlign="right">{hub.status === HubStatus.LaunchingProgram && "Progress"}</Table.Header>
             </Table.Row>
           </Table.Head>
           <Table.Body>
@@ -45,7 +45,7 @@ export function DetailsCard({ hub }: { hub: Hub }) {
                 <StatusBadge status={hub.status} />
               </Table.Cell>
               <Table.Cell textAlign="right" fontVariantNumeric="tabular-nums">
-                {hub?.capabilities?.maxWriteSize ?? "—"}
+                {hub.status === HubStatus.LaunchingProgram && `${launchProgramProgress.toFixed(0)}%`}
               </Table.Cell>
             </Table.Row>
           </Table.Body>

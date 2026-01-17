@@ -109,11 +109,11 @@ function waitForReplReady(hub: Hub) {
   });
 }
 
-export async function writeStdinWithResponse(hub: Hub, message: string) {
+export async function writeStdinWithResponse(hub: Hub, message: string, options: { onProgress?: (progress: number) => void } = {}) {
   DeviceUtls.assertConnected(hub.device);
   HubUtils.assertCapabilities(hub);
   const commands = PybricksCommands.createWriteStdinCommands(message, hub.capabilities.maxWriteSize);
-  return await PybricksCommands.writeCommandsWithResponse(hub.device, commands);
+  return await PybricksCommands.writeCommandsWithResponse(hub.device, commands, options);
 }
 
 /**

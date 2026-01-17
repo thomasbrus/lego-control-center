@@ -4,7 +4,6 @@ import * as HubHooks from "@/lib/hub/hooks";
 import { Hub } from "@/lib/hub/types";
 import { useModeContext } from "@/lib/mode/hooks";
 import * as SimulatedHubHooks from "@/lib/simulated-hub/hooks";
-import { TelemetryEvent } from "@/lib/telemetry/types";
 import { BluetoothIcon } from "lucide-react";
 
 export function ConnectCard({
@@ -13,13 +12,15 @@ export function ConnectCard({
   description,
   onTerminalOutput,
   onTelemetryEvent,
+  onLaunchProgramProgress,
   onDisconnect,
 }: {
   hub: Hub;
   title: string;
   description: string;
-  onTerminalOutput: (output: string) => void;
-  onTelemetryEvent: (event: TelemetryEvent) => void;
+  onTerminalOutput: HubHooks.TerminalOutputHandler;
+  onTelemetryEvent: HubHooks.TelemetryEventHandler;
+  onLaunchProgramProgress: HubHooks.LaunchProgramProgressHandler;
   onDisconnect: () => void;
 }) {
   const { simulated } = useModeContext();
@@ -34,7 +35,7 @@ export function ConnectCard({
       let updatedHub = await startNotifications(connectedHub, { onTerminalOutput, onTelemetryEvent });
       updatedHub = await retrieveCapabilities(updatedHub);
       updatedHub = await startRepl(updatedHub);
-      updatedHub = await launchProgram(updatedHub);
+      updatedHub = await launchProgram(updatedHub, { onProgress: onLaunchProgramProgress });
     }
   }
 

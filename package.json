@@ -23,6 +23,7 @@
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-scroll-to-bottom": "^4.2.0",
     "vite-tsconfig-paths": "^5.1.4",
     "zod": "^4.3.5"
   },
@@ -33,6 +34,7 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@types/react-scroll-to-bottom": "^4.2.5",
     "@vitejs/plugin-react": "^5.0.4",
     "jsdom": "^27.0.0",
     "typescript": "^5.7.2",

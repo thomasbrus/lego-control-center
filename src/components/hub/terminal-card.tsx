@@ -1,17 +1,18 @@
-import { useScrollArea } from "@ark-ui/react";
 import { TerminalIcon } from "lucide-react";
-import React, { useEffect } from "react";
+import React from "react";
+import ScrollToBottom from "react-scroll-to-bottom";
+import { css } from "styled-system/css";
 import { styled } from "styled-system/jsx";
-import { Card, Icon, ScrollArea } from "../ui";
+import { Card, Icon } from "../ui";
 import { EmptyState } from "../ui/empty-state";
 
-export function TerminalCard({ terminalOutput }: { terminalOutput: string }) {
-  const scrollArea = useScrollArea();
-  const terminalLines = terminalOutput.split("\n");
+const scrollAreaClasses = css({
+  height: "[320px]",
+  width: "full",
+});
 
-  useEffect(() => {
-    scrollArea.scrollToEdge({ edge: "bottom" });
-  }, [terminalLines.length]);
+export function TerminalCard({ terminalOutput }: { terminalOutput: string }) {
+  const terminalLines = terminalOutput.split("\n");
 
   return (
     <Card.Root>
@@ -27,7 +28,7 @@ export function TerminalCard({ terminalOutput }: { terminalOutput: string }) {
         {terminalLines.join().length === 0 ? (
           <EmptyState description="No output yet." />
         ) : (
-          <ScrollArea.Default value={scrollArea} size="xs" maxH="64">
+          <ScrollToBottom className={scrollAreaClasses}>
             <styled.pre fontSize="xs" fontFamily="mono" whiteSpace="pre-wrap" wordBreak="break-all" p="2" bg="gray.2" borderRadius="l1">
               {terminalLines.map((terminalLine, i) => (
                 <React.Fragment key={i}>
@@ -36,7 +37,7 @@ export function TerminalCard({ terminalOutput }: { terminalOutput: string }) {
                 </React.Fragment>
               ))}
             </styled.pre>
-          </ScrollArea.Default>
+          </ScrollToBottom>
         )}
       </Card.Body>
     </Card.Root>

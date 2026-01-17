@@ -1,5 +1,6 @@
 import { assertConnected } from "@/lib/device/utils";
 import { encodeMessage } from "@/lib/messages/encoding";
+import { safeInvoke } from "../utils";
 import { pybricksControlCharacteristicUUID, pybricksHubCapabilitiesCharacteristicUUID, pybricksServiceUUID } from "./constants";
 import {
   BuiltinProgramId,
@@ -63,9 +64,15 @@ export function createWriteAppDataCommands(data: ArrayBuffer, maxWriteSize: numb
   return commands;
 }
 
-export async function writeCommandsWithResponse(device: BluetoothDevice, commands: Uint8Array<ArrayBuffer>[]) {
-  for (const command of commands) {
-    await writeCommandWithResponse(device, command);
+export async function writeCommandsWithResponse(
+  device: BluetoothDevice,
+  commands: Uint8Array<ArrayBuffer>[],
+  options: { onProgress?: (progress: number) => void } = {},
+) {
+  safeInvoke(options.onProgress, 0);
+  for (let i = 0; i < commands.length; i++) {
+    await writeCommandWithResponse(device, commands[i]);
+    safeInvoke(options.onProgress, ((i + 1) / commands.length) * 100);
   }
 }
 

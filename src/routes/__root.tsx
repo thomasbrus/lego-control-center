@@ -58,8 +58,8 @@ function RootComponent() {
       >
         <Heading>LEGO Control Center</Heading>
         <Switch.Root
-          checked={simulated}
-          onCheckedChange={(details) => setSimulated(details.checked)}
+          checked={!simulated}
+          onCheckedChange={(details) => setSimulated(!details.checked)}
           size="xs"
           colorPalette="green"
           cursor="pointer"
@@ -67,7 +67,7 @@ function RootComponent() {
           <Switch.Control>
             <Switch.Thumb />
           </Switch.Control>
-          <Switch.Label>Simulated mode</Switch.Label>
+          <Switch.Label>Live mode</Switch.Label>
           <Switch.HiddenInput />
         </Switch.Root>
       </styled.header>

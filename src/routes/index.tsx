@@ -92,6 +92,7 @@ function Main() {
 function HubDashboard({ hub }: { hub: Hub }) {
   const [terminalOutput, setTerminalOutput] = useState<string>("");
   const [telemetryEvents, setTelemetryEvents] = useState<TelemetryEvent[]>([]);
+  const [launchProgramProgress, setLaunchProgramProgress] = useState<number>(0);
 
   function handleTerminalOutput(output: string) {
     setTerminalOutput((prev) => prev + output);
@@ -101,9 +102,15 @@ function HubDashboard({ hub }: { hub: Hub }) {
     setTelemetryEvents((prev) => [...prev, event]);
   }
 
+  function handleLaunchProgramProgres(progress: number) {
+    setLaunchProgramProgress(progress);
+  }
+
   function handleDisconnect() {
+    debugger;
     setTerminalOutput("");
     setTelemetryEvents([]);
+    setLaunchProgramProgress(0);
   }
 
   return (
@@ -115,11 +122,12 @@ function HubDashboard({ hub }: { hub: Hub }) {
           description="Let's connect this hub to get started."
           onTerminalOutput={handleTerminalOutput}
           onTelemetryEvent={handleTelemetryEvent}
+          onLaunchProgramProgress={handleLaunchProgramProgres}
           onDisconnect={handleDisconnect}
         />
       ) : (
         <>
-          <HubComponents.DetailsCard hub={hub} />
+          <HubComponents.DetailsCard hub={hub} launchProgramProgress={launchProgramProgress} />
           <HubComponents.LightCard hub={hub} />
           <HubComponents.TerminalCard terminalOutput={terminalOutput} />
           <HubComponents.TelemetryCard telemetryEvents={telemetryEvents} />
