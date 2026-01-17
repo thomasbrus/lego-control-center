@@ -1,12 +1,12 @@
-export type TelemetryType = "HubInfo" | "HubStatus" | "HubIMU" | "MotorLimits" | "MotorStatus" | "SensorStatus";
+export type TelemetryType = "HubInfo" | "HubPhase" | "HubIMU" | "MotorLimits" | "MotorStatus" | "SensorStatus";
 
 export interface HubInfoTelemetry {
   type: "HubInfo";
   hubType: number;
 }
 
-export interface HubStatusTelemetry {
-  type: "HubStatus";
+export interface HubPhaseTelemetry {
+  type: "HubPhase";
   batteryPercentage: number;
 }
 
@@ -46,7 +46,7 @@ export interface SensorStatusTelemetry {
 
 export type TelemetryEvent =
   | HubInfoTelemetry
-  | HubStatusTelemetry
+  | HubPhaseTelemetry
   | HubIMUTelemetry
   | MotorLimitsTelemetry
   | MotorStatusTelemetry

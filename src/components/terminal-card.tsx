@@ -3,8 +3,8 @@ import React from "react";
 import ScrollToBottom from "react-scroll-to-bottom";
 import { css } from "styled-system/css";
 import { styled } from "styled-system/jsx";
-import { Card, Icon } from "../ui";
-import { EmptyState } from "../ui/empty-state";
+import { Card, Icon } from "./ui";
+import { EmptyState } from "./ui/empty-state";
 
 const scrollAreaClasses = css({
   height: "[320px]",

@@ -6,7 +6,7 @@ import { useModeContext } from "@/lib/mode/hooks";
 import * as SimulatedHubHooks from "@/lib/simulated-hub/hooks";
 import { BluetoothIcon } from "lucide-react";
 
-export function ConnectCard({
+export function HubConnectCard({
   hub,
   title,
   description,

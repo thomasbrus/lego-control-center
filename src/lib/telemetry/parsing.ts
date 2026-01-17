@@ -18,7 +18,7 @@ export function parseTelemetryEvent(buffer: ArrayBuffer): TelemetryEvent {
     case 0x11: // HUB_STATUS
       // <BB: TelemetryType, BatteryPercentage
       return {
-        type: "HubStatus",
+        type: "HubPhase",
         batteryPercentage: view.getUint8(1),
       };
     case 0x12: // HUB_IMU

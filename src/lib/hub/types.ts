@@ -5,13 +5,16 @@ export type HubId = BluetoothDevice["id"];
 export interface Hub {
   id: HubId;
   name: string;
-  status: HubStatus;
+  type?: number;
+  phase: HubPhase;
   device?: BluetoothDevice;
   capabilities?: HubCapabilities;
-  model?: HubModel;
+  batteryPercentage?: number;
+  motors?: Map<number, MotorModel>;
+  imu?: HubIMU;
 }
 
-export enum HubStatus {
+export enum HubPhase {
   Idle,
   Connecting,
   Connected,
@@ -26,13 +29,6 @@ export enum HubStatus {
 
 export interface HubCapabilities {
   maxWriteSize: number;
-}
-
-export interface HubModel {
-  hubType?: number;
-  batteryPercentage?: number;
-  imu?: HubIMU;
-  motors?: Map<number, MotorModel>;
 }
 
 export interface HubIMU {

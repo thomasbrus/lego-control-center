@@ -5,7 +5,7 @@ import * as HubUtils from "@/lib/hub/utils";
 import { createListCollection } from "@ark-ui/react";
 import { LightbulbIcon } from "lucide-react";
 import { useState } from "react";
-import { ValueChangeDetails } from "../ui/select";
+import { ValueChangeDetails } from "./ui/select";
 
 const lightCollection = createListCollection({
   items: [
@@ -21,7 +21,7 @@ const lightCollection = createListCollection({
   ],
 });
 
-export function LightCard({ hub }: { hub: Hub }) {
+export function HubLightCard({ hub }: { hub: Hub }) {
   const [light, setLight] = useState<number>(5);
 
   function handleTurnOff() {

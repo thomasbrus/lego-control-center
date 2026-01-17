@@ -1,4 +1,4 @@
-import { Hub, HubId, HubModel, HubStatus } from "@/lib/hub/types";
+import { Hub, HubId, HubPhase } from "@/lib/hub/types";
 import { createContext, useCallback, useReducer } from "react";
 import { TelemetryEvent } from "../telemetry/types";
 
@@ -35,31 +35,30 @@ export const HubsContext = createContext<HubsContextValue | undefined>(undefined
 const idleHub: Hub = {
   id: "untitled-hub",
   name: "Untitled Hub",
-  status: HubStatus.Idle,
-  model: {},
+  phase: HubPhase.Idle,
 };
 
 /* ──────────────────────────
    Reducer helpers
 ────────────────────────── */
 
-function applyTelemetryToModel(prevModel: HubModel | undefined, event: TelemetryEvent): HubModel {
-  const nextModel: HubModel = {
-    ...prevModel,
-    motors: prevModel?.motors ? new Map(prevModel.motors) : undefined,
+function applyTelemetryToModel(prevHub: Hub, event: TelemetryEvent): Hub {
+  const nextHub: Hub = {
+    ...prevHub,
+    motors: prevHub?.motors ? new Map(prevHub.motors) : undefined,
   };
 
   switch (event.type) {
     case "HubInfo":
-      nextModel.hubType = event.hubType;
+      nextHub.type = event.hubType;
       break;
 
-    case "HubStatus":
-      nextModel.batteryPercentage = event.batteryPercentage;
+    case "HubPhase":
+      nextHub.batteryPercentage = event.batteryPercentage;
       break;
 
     case "HubIMU":
-      nextModel.imu = {
+      nextHub.imu = {
         pitch: event.pitch,
         roll: event.roll,
         yaw: event.yaw,
@@ -67,10 +66,10 @@ function applyTelemetryToModel(prevModel: HubModel | undefined, event: Telemetry
       break;
 
     case "MotorLimits": {
-      nextModel.motors ||= new Map();
-      const prevMotor = nextModel.motors.get(event.portIndex);
+      nextHub.motors ||= new Map();
+      const prevMotor = nextHub.motors.get(event.portIndex);
 
-      nextModel.motors.set(event.portIndex, {
+      nextHub.motors.set(event.portIndex, {
         ...prevMotor,
         limits: {
           speed: event.speed,
@@ -82,10 +81,10 @@ function applyTelemetryToModel(prevModel: HubModel | undefined, event: Telemetry
     }
 
     case "MotorStatus": {
-      nextModel.motors ||= new Map();
-      const prevMotor = nextModel.motors.get(event.portIndex);
+      nextHub.motors ||= new Map();
+      const prevMotor = nextHub.motors.get(event.portIndex);
 
-      nextModel.motors.set(event.portIndex, {
+      nextHub.motors.set(event.portIndex, {
         ...prevMotor,
         angle: event.angle,
         speed: event.speed,
@@ -100,7 +99,7 @@ function applyTelemetryToModel(prevModel: HubModel | undefined, event: Telemetry
       break;
   }
 
-  return nextModel;
+  return nextHub;
 }
 
 /* ──────────────────────────
@@ -126,8 +125,7 @@ function hubsReducer(state: Map<HubId, Hub>, action: HubAction): Map<HubId, Hub>
       nextState.set(action.id, {
         id: hub.id,
         name: hub.name,
-        status: HubStatus.Idle,
-        model: {},
+        phase: HubPhase.Idle,
       });
 
       return nextState;
@@ -137,13 +135,8 @@ function hubsReducer(state: Map<HubId, Hub>, action: HubAction): Map<HubId, Hub>
       const hub = nextState.get(action.id);
       if (!hub) return state;
 
-      const updatedModel = applyTelemetryToModel(hub.model, action.event);
-
-      nextState.set(action.id, {
-        ...hub,
-        model: updatedModel,
-      });
-
+      const updatedHub = applyTelemetryToModel(hub, action.event);
+      nextState.set(action.id, updatedHub);
       return nextState;
     }
 

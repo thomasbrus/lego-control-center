@@ -2,8 +2,8 @@ import { TelemetryEvent } from "@/lib/telemetry/types";
 import { RadioIcon } from "lucide-react";
 import ScrollToBottom from "react-scroll-to-bottom";
 import { css } from "styled-system/css";
-import { Badge, Card, Icon, Table } from "../ui";
-import { EmptyState } from "../ui/empty-state";
+import { Badge, Card, Icon, Table } from "./ui";
+import { EmptyState } from "./ui/empty-state";
 
 const scrollAreaClasses = css({
   height: "[320px]",

@@ -1,5 +1,5 @@
 import { assert } from "../utils";
-import { Hub, HubCapabilities, HubStatus } from "./types";
+import { Hub, HubCapabilities, HubPhase } from "./types";
 
 // export function assertConnected(hub: Hub): asserts hub is ConnectedHub {
 //   assert(isConnected(hub), "Hub is not connected");
@@ -17,20 +17,20 @@ export function assertCapabilities(hub: Hub): asserts hub is Hub & { capabilitie
 //   return isConnected(hub) && !!hub.capabilities;
 // }
 
-export function isAtLeastStatus(hub: Hub, minStatus: HubStatus): boolean {
-  return hub.status >= minStatus;
+export function isAtLeastPhase(hub: Hub, minStatus: HubPhase): boolean {
+  return hub.phase >= minStatus;
 }
 
 export function isConnected(hub: Hub): boolean {
-  return isAtLeastStatus(hub, HubStatus.Connected);
+  return isAtLeastPhase(hub, HubPhase.Connected);
 }
 
 export function isRunning(hub: Hub): boolean {
-  return isAtLeastStatus(hub, HubStatus.Running);
+  return isAtLeastPhase(hub, HubPhase.Running);
 }
 
 // export function isConnected(hub: Hub): boolean {
-//   return isAtLeastStatus(hub, HubStatus.Connected);
+//   return isAtLeastPhase(hub, HubPhase.Connected);
 // }
 
 // export function assertConnected(hub: Hub): asserts hub is ConnectedHub {

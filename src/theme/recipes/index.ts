@@ -1,23 +1,25 @@
-import { tooltip } from "./tooltip";
-import { tabs } from "./tabs";
-import { select } from "./select";
-import { switchRecipe } from "./switch";
-import { segmentGroup } from "./segment-group";
-import { scrollArea } from "./scroll-area";
-import { radioCardGroup } from "./radio-card-group";
-import { icon } from "./icon";
-import { menu } from "./menu";
-import { badge } from "./badge";
-import { table } from "./table";
-import { alert } from "./alert";
-import { heading } from "./heading";
-import { text } from "./text";
-import { spinner } from "./spinner";
 import { absoluteCenter } from "./absolute-center";
-import { group } from "./group";
+import { alert } from "./alert";
+import { angleSlider } from "./angle-slider";
+import { badge } from "./badge";
 import { button } from "./button";
 import { card } from "./card";
+import { group } from "./group";
+import { heading } from "./heading";
+import { icon } from "./icon";
+import { menu } from "./menu";
+import { radioCardGroup } from "./radio-card-group";
+import { scrollArea } from "./scroll-area";
+import { segmentGroup } from "./segment-group";
+import { select } from "./select";
+import { spinner } from "./spinner";
+import { switchRecipe } from "./switch";
+import { table } from "./table";
+import { tabs } from "./tabs";
+import { text } from "./text";
+import { tooltip } from "./tooltip";
 export const recipes = {
+  angleSlider,
   card,
   button,
   group,
@@ -36,6 +38,6 @@ export const recipes = {
   switchRecipe,
   select,
   tabs,
-  tooltip
-}
-export const slotRecipes = {}
+  tooltip,
+};
+export const slotRecipes = {};
