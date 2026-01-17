@@ -10,9 +10,10 @@ import { Hub } from "./types";
  */
 export enum CommandType {
   SHUTDOWN_HUB = 0x10,
+  SET_HUB_LIGHT = 0x11,
   SET_MOTOR_SPEEDS = 0x20,
   STOP_ALL_MOTORS = 0x21,
-  SET_LIGHT = 0x30,
+  SET_SENSOR_LIGHT = 0x30,
 }
 
 /**
@@ -47,6 +48,14 @@ export async function shutdownHub(hub: Hub) {
 }
 
 /**
+ * Set the light color (index)
+ */
+export async function setHubLight(hub: Hub, colorIndex: number) {
+  const buffer = createCommandBuffer(CommandType.SET_HUB_LIGHT, [colorIndex]);
+  await writeStdinCommand(hub, buffer);
+}
+
+/**
  * Set speeds for all motors (array of 4 signed shorts)
  */
 export async function setMotorSpeeds(hub: Hub, speeds: [number, number, number, number]) {
@@ -59,14 +68,6 @@ export async function setMotorSpeeds(hub: Hub, speeds: [number, number, number, 
  */
 export async function stopAllMotors(hub: Hub) {
   const buffer = createCommandBuffer(CommandType.STOP_ALL_MOTORS);
-  await writeStdinCommand(hub, buffer);
-}
-
-/**
- * Set the light color (index)
- */
-export async function setLight(hub: Hub, colorIndex: number) {
-  const buffer = createCommandBuffer(CommandType.SET_LIGHT, [colorIndex]);
   await writeStdinCommand(hub, buffer);
 }
 

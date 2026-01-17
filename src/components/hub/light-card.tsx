@@ -25,11 +25,11 @@ export function LightCard({ hub }: { hub: Hub }) {
   const [light, setLight] = useState<number>(5);
 
   function handleTurnOff() {
-    HubCommands.setLight(hub, 0);
+    HubCommands.setHubLight(hub, 0);
   }
 
   function handleApply() {
-    HubCommands.setLight(hub, light);
+    HubCommands.setHubLight(hub, light);
   }
 
   function handleValueChange(details: ValueChangeDetails) {

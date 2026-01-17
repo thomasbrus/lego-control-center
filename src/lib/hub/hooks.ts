@@ -9,7 +9,7 @@ import { EventType } from "../pybricks/protocol";
 import * as TelemetryParsing from "../telemetry/parsing";
 import { TelemetryEvent } from "../telemetry/types";
 import { HubsContext } from "./context";
-import { programMain } from "./program";
+import { programMain1, programMain2 } from "./program";
 import { Hub, HubCapabilities, HubId, HubStatus } from "./types";
 
 export function useHub() {
@@ -139,7 +139,11 @@ export function useHub() {
       const launcningProgramHub = updateHub(hub.id, { ...hub, status: HubStatus.LaunchingProgram });
 
       await HubCommands.enterPasteMode(hub);
-      await HubCommands.writeStdinWithResponse(hub, programMain);
+      await HubCommands.writeStdinWithResponse(hub, programMain1);
+      await HubCommands.exitPasteMode(hub);
+
+      await HubCommands.enterPasteMode(hub);
+      await HubCommands.writeStdinWithResponse(hub, programMain2);
       await HubCommands.exitPasteMode(hub);
 
       return updateHub(hub.id, { ...launcningProgramHub, status: HubStatus.Running });

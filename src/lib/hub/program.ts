@@ -1,44 +1,42 @@
-export const programDemo = `
+export const programDemo1 = `
 print("Hello world!")
 
 async def say_hello():
     while True:
         print("Hello world!")
         await wait(1000)
+`;
 
+export const programDemo2 = `
 async def main():
     await multitask(say_hello())
 
 run_task(main())
 `;
 
-export const programMain = `
+export const programMain1 = `
 from usys import stdin, stdout
 from ustruct import unpack, pack_into, calcsize
 from uselect import poll
+from micropython import const # This is key for saving RAM
 
-def do_nothing(*args, **kwargs):
+PORT_NAMES = ('A', 'B', 'C', 'D', 'E', 'F')
+PORTS = tuple(getattr(Port, name) for name in PORT_NAMES if hasattr(Port, name))
+
+def discover_device_on_port(port, *device_classes):
+    for device_cls in device_classes:
+        try:
+            return device_cls(port)
+        except OSError:
+            pass
     return None
 
-class NoneDevice:
-    def __bool__(self):
-        return False
-
-    def __getattr__(self, name):
-        return do_nothing
-
-def discover_devices(device_cls):
-    devices = {}
-
-    for port in [Port.A, Port.B, Port.C, Port.D, Port.E, Port.F]:
-        try:
-            devices[port] = device_cls(port)
-        except OSError:
-            devices[port] = NoneDevice()
-
-    return devices
+def discover_devices(*device_classes):
+    return [discover_device_on_port(p, *device_classes) for p in PORTS]
 
 class HubController:
+    __slots__ = ("hub", "COLORS", "MIN_VOLTAGE", "MAX_VOLTAGE")
+
     COLORS = [
         Color.NONE,     # 0 = NONE (off, not black)
         Color.BLACK,    # 1
@@ -69,53 +67,62 @@ class HubController:
         value = int((voltage - self.MIN_VOLTAGE) * 100 / (self.MAX_VOLTAGE - self.MIN_VOLTAGE))
         return max(0, min(100, value))
 
-    def signal_strength(self):
-        return self.hub.ble.signal_strength(0)
+class MotorsController:
+    __slots__ = ("motors",)
 
-class MotorsController
     def __init__(self):
         self.motors = discover_devices(Motor)
+        gc.collect()
 
     def set_speeds(self, speeds):
-        for i, port in enumerate(self.ports):
-            motor = self.motors[port]
-            motor.run(speeds[i])
+        for motor, speed in zip(self.motors, speeds):
+            if motor:
+                motor.run(speed)
 
     def stop_all(self):
-        for motor in self.motors.values():
+        for motor in self.motors:
             motor.stop()
 
     def read_states(self):
-        for port, motor in self.motors.items():
+        for port_index, motor in enumerate(self.motors):
             if motor:
-                yield port, motor.model.state()
+                yield port_index, motor.model.state()
 
-class ColorDistanceSensorsController:
+SENSOR_STATE_READERS = {
+    ColorDistanceSensor: (0, lambda sensor: [sensor.distance()] + list(sensor.hsv())),
+}
+
+class SensorsController:
+    __slots__ = ("sensors",)
+
     def __init__(self):
         self.sensors = discover_devices(ColorDistanceSensor)
+        gc.collect()
 
     def read_states(self):
-        for port, sensor in self.sensors.items():
+        for port_index, sensor in enumerate(self.sensors):
             if sensor:
-                yield port, [sensor.distance(), *sensor.hsv()]
+                sensor_type_id, read_state = SENSOR_STATE_READERS[type(sensor)]
+                yield port_index, sensor_type_id, read_state(sensor)
 
 motors_controller = MotorsController()
-color_distance_sensors_controller = ColorDistanceSensorsController()
+sensors_controller = SensorsController()
 hub_controller = HubController(hub)
-battery_monitor = BatteryMonitor(hub)
 
 class CommandType:
-    SHUTDOWN_HUB = 0x10
-    SET_HUB_LIGHT = 0x11
+    SHUTDOWN_HUB = const(0x10)
+    SET_HUB_LIGHT = const(0x11)
+    SET_MOTOR_SPEEDS = const(0x20)
+    STOP_ALL_MOTORS = const(0x21)
+    SET_SENSOR_LIGHT = const(0x30)
 
-    SET_MOTOR_SPEEDS = 0x20
-    STOP_ALL_MOTORS = 0x21
-
-    SET_COLOR_DISTANCE_SENSOR_LIGHT = 0x30
-
-    @classmethod
-    def all(cls):
-        return [cls.SHUTDOWN_HUB, cls.SET_HUB_LIGHT, cls.SET_MOTOR_SPEEDS, cls.STOP_ALL_MOTORS, cls.SET_COLOR_DISTANCE_SENSOR_LIGHT]
+ALL_COMMAND_TYPES = [
+    CommandType.SHUTDOWN_HUB,
+    CommandType.SET_HUB_LIGHT,
+    CommandType.SET_MOTOR_SPEEDS,
+    CommandType.STOP_ALL_MOTORS,
+    CommandType.SET_SENSOR_LIGHT
+]
 
 class CommandProtocol:
     # [CommandType(B), ...4xArgument(h)]
@@ -125,18 +132,20 @@ class CommandProtocol:
 app_data = AppData(CommandProtocol.FORMAT)
 
 class CommandHandler:
+    __slots__ = ("poller",)
+
     def __init__(self):
         self.poller = poll()
         self.poller.register(stdin)
 
     async def process_stdin(self):
-        while not self.poller.poll(0):
-            await wait(10)
+        if not self.poller.poll(0):
+            return
 
         command_type = stdin.buffer.read(1)[0]
 
         # Remove bytes that are not commands
-        while command_type not in CommandType.all():
+        while command_type not in ALL_COMMAND_TYPES:
             command_type = stdin.buffer.read(1)[0]
 
         payload = bytes([command_type]) + stdin.buffer.read(CommandProtocol.SIZE - 1)
@@ -160,35 +169,39 @@ class CommandHandler:
             motors_controller.set_speeds(args[0:])
         elif command_type == CommandType.STOP_ALL_MOTORS:
             motors_controller.stop_all()
-        elif command_type == CommandType.SET_COLOR_DISTANCE_SENSOR_LIGHT:
+        elif command_type == CommandType.SET_SENSOR_LIGHT:
             pass # To be implemented
+`;
 
+export const programMain2 = `
 class TelemetryType:
-    HUB_STATUS = 0x11
-    HUB_IMU = 0x12
-    MOTOR_STATUS = 0x20
-    COLOR_DISTANCE_SENSOR_STATUS = 0x30
+    HUB_STATUS = const(0x11)
+    HUB_IMU = const(0x12)
+    MOTOR_STATUS = const(0x20)
+    SENSOR_STATUS = const(0x30)
 
 class TelemetryProtocol:
-    MAX_SIZE = calcsize("<Bhhhhh")
+    MAX_SIZE = calcsize("<BBBhhhh")
 
-    # [TelemetryType(B), BatteryPercentage(B), SignalStrength(b)]
-    HUB_STATUS_FORMAT = "<BBb"
+    # [TelemetryType(B), BatteryPercentage(B)]
+    HUB_STATUS_FORMAT = "<BB"
     HUB_STATUS_SIZE = calcsize(HUB_STATUS_FORMAT)
 
     # [TelemetryType(B), Pitch(h), Roll(h), Yaw(h)]
     HUB_IMU_FORMAT = "<Bhhh"
     HUB_IMU_SIZE = calcsize(HUB_IMU_FORMAT)
 
-    # [TelemetryType(B), Port(B), Angle(h), Speed(h), Load(h), IsStalled(B)]
-    MOTOR_STATUS_FORMAT = "<BBhhh?"
+    # [TelemetryType(B), PortIndex(B), Angle(h), Speed(h), Load(h), IsStalled(B)]
+    MOTOR_STATUS_FORMAT = "<BBhhhB"
     MOTOR_STATUS_SIZE = calcsize(MOTOR_STATUS_FORMAT)
 
-    # [TelemetryType(B), Port(B), Distance(h), Hue(h), Saturation(h), Value(h)]
-    COLOR_DISTANCE_SENSOR_STATUS_FORMAT = "<BBhhhh"
-    COLOR_DISTANCE_SENSOR_STATUS_SIZE = calcsize(COLOR_DISTANCE_SENSOR_STATUS_FORMAT)
+    # [TelemetryType(B), PortIndex(B), SensorType(B), Distance(h), Hue(h), Saturation(h), Value(h)]
+    SENSOR_STATUS_FORMAT = "<BBBhhhh"
+    SENSOR_STATUS_SIZE = calcsize(SENSOR_STATUS_FORMAT)
 
 class TelemetryCollector:
+    __slots__ = ("payload",)
+
     def __init__(self):
         self.payload = bytearray(TelemetryProtocol.MAX_SIZE)
 
@@ -198,88 +211,97 @@ class TelemetryCollector:
             self.payload,
             0,
             TelemetryType.HUB_STATUS,
-            hub_controller.battery_percentage(),
-            hub_controller.signal_strength()
+            hub_controller.battery_percentage()
         )
 
-        return memoryview(self.payload)[:TelemetryProtocol.HUB_STATUS_SIZE]
+        return bytes(self.payload)[:TelemetryProtocol.HUB_STATUS_SIZE]
 
     def collect_hub_imu(self):
+        pitch, roll = hub.imu.tilt()
+        heading = hub.imu.heading('3D')
+
         pack_into(
             TelemetryProtocol.HUB_IMU_FORMAT,
             self.payload,
             0,
             TelemetryType.HUB_IMU,
-            *hub.imu.pitch_roll(),
-            hub.imu.heading('3D')
+            int(pitch),
+            int(roll),
+            int(heading)
         )
 
-        return memoryview(self.payload)[:TelemetryProtocol.HUB_IMU_SIZE]
+        return bytes(self.payload)[:TelemetryProtocol.HUB_IMU_SIZE]
 
     def collect_motor_statuses(self):
-        for port, motor_status in motors_controller.read_states():
+        for port_index, motor_status in motors_controller.read_states():
             pack_into(
                 TelemetryProtocol.MOTOR_STATUS_FORMAT,
                 self.payload,
                 0,
                 TelemetryType.MOTOR_STATUS,
-                port,
-                *motor_status
+                port_index,
+                int(motor_status[0]),
+                int(motor_status[1]),
+                int(motor_status[2]),
+                int(motor_status[3])
             )
 
-            yield memoryview(self.payload)[:TelemetryProtocol.MOTOR_STATUS_SIZE]
+            yield bytes(self.payload)[:TelemetryProtocol.MOTOR_STATUS_SIZE]
 
-    def collect_color_distance_sensor_statuses(self):
-        for port, sensor_status in color_distance_sensors_controller.read_states():
+    def collect_sensor_statuses(self):
+        for port_index, sensor_type, sensor_status in sensors_controller.read_states():
             pack_into(
-                TelemetryProtocol.COLOR_DISTANCE_SENSOR_STATUS_FORMAT,
+                TelemetryProtocol.SENSOR_STATUS_FORMAT,
                 self.payload,
                 0,
-                TelemetryType.COLOR_DISTANCE_SENSOR_STATUS,
-                port,
-                *sensor_status
+                TelemetryType.SENSOR_STATUS,
+                port_index,
+                sensor_type,
+                sensor_status[0],
+                sensor_status[1],
+                sensor_status[2],
+                sensor_status[3]
             )
 
-            yield memoryview(self.payload)[:TelemetryProtocol.COLOR_DISTANCE_SENSOR_STATUS_SIZE]
+            yield bytes(self.payload)[:TelemetryProtocol.SENSOR_STATUS_SIZE]
 
 command_handler = CommandHandler()
 telemetry_collector = TelemetryCollector()
 
 async def process_stdin_command_loop():
     while True:
-        await self.command_handler.process_stdin()
+        await command_handler.process_stdin()
         await wait(0)
 
 async def process_app_data_command_loop():
     while True:
-        self.command_handler.process_app_data()
+        command_handler.process_app_data()
         await wait(500)
 
-async def broadcast_low_rate_telemetry_loop():
+async def broadcast_telemetry_loop():
     while True:
-        bytes = self.telemetry_collector.collect_hub_status()
+        bytes = telemetry_collector.collect_hub_status()
         await app_data.write_bytes(bytes)
-        await wait(10000)
-
-async def broadcast_high_rate_telemetry_loop():
-    while True:
-        bytes = self.telemetry_collector.collect_hub_imu()
-        await app_data.write_bytes(bytes)
-
-        for bytes in self.telemetry_collector.collect_motor_statuses():
-            await app_data.write_bytes(bytes)
-
-        for bytes in self.telemetry_collector.collect_color_distance_sensor_statuses():
-            await app_data.write_bytes(bytes)
-
         await wait(1000)
+
+        for i in range(10):
+            bytes = telemetry_collector.collect_hub_imu()
+            await app_data.write_bytes(bytes)
+
+            for bytes in telemetry_collector.collect_motor_statuses():
+                await app_data.write_bytes(bytes)
+
+            # for bytes in telemetry_collector.collect_sensor_statuses():
+            #     await app_data.write_bytes(bytes)
+
+            await wait(1000)
+            gc.collect()
 
 async def main():
     await multitask(
         process_stdin_command_loop(),
         process_app_data_command_loop(),
-        broadcast_telemetry_low_rate_loop(),
-        broadcast_high_rate_telemetry_loop()
+        broadcast_telemetry_loop()
     )
 
 run_task(main())

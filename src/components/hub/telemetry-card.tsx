@@ -31,18 +31,14 @@ export function TelemetryCard({ telemetryEvents }: { telemetryEvents: TelemetryE
               <Table.Head>
                 <Table.Row>
                   <Table.Header>Index</Table.Header>
-                  <Table.Header>Battery</Table.Header>
-                  <Table.Header>Motor Angles</Table.Header>
-                  <Table.Header>Motor Speeds</Table.Header>
+                  <Table.Header>Summary</Table.Header>
                 </Table.Row>
               </Table.Head>
               <Table.Body>
                 {telemetryEvents.map((telemetryEvent, index) => (
                   <Table.Row key={index}>
                     <Table.Cell>{index}</Table.Cell>
-                    <Table.Cell>{telemetryEvent.hubBattery}%</Table.Cell>
-                    <Table.Cell fontSize="xs">{telemetryEvent.motorAngles.join(", ")}</Table.Cell>
-                    <Table.Cell fontSize="xs">{telemetryEvent.motorSpeeds.join(", ")}</Table.Cell>
+                    <Table.Cell fontSize="xs">{JSON.stringify(telemetryEvent)}</Table.Cell>
                   </Table.Row>
                 ))}
               </Table.Body>
