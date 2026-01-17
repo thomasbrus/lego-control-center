@@ -1,3 +1,5 @@
+import { MotorModel } from "../motor/types";
+
 export type HubId = BluetoothDevice["id"];
 
 export interface Hub {
@@ -6,6 +8,7 @@ export interface Hub {
   status: HubStatus;
   device?: BluetoothDevice;
   capabilities?: HubCapabilities;
+  model?: HubModel;
 }
 
 export enum HubStatus {
@@ -23,4 +26,17 @@ export enum HubStatus {
 
 export interface HubCapabilities {
   maxWriteSize: number;
+}
+
+export interface HubModel {
+  hubType?: number;
+  batteryPercentage?: number;
+  imu?: HubIMU;
+  motors?: Map<number, MotorModel>;
+}
+
+export interface HubIMU {
+  pitch: number;
+  roll: number;
+  yaw: number;
 }

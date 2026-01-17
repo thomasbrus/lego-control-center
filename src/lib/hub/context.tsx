@@ -1,54 +1,150 @@
-import { Hub, HubId, HubStatus } from "@/lib/hub/types";
+import { Hub, HubId, HubModel, HubStatus } from "@/lib/hub/types";
 import { createContext, useCallback, useReducer } from "react";
+import { TelemetryEvent } from "../telemetry/types";
 
-// Action types for the reducer
+/* ──────────────────────────
+   Actions
+────────────────────────── */
+
 type HubAction =
   | { type: "ADD_HUB"; hub: Hub }
   | { type: "REMOVE_HUB"; id: HubId }
-  | { type: "UPDATE_HUB"; id: HubId; updatedHub: Hub }
-  | { type: "DISCONNECT_HUB"; id: HubId };
+  | { type: "DISCONNECT_HUB"; id: HubId }
+  | { type: "HUB_TELEMETRY_RECEIVED"; id: HubId; event: TelemetryEvent };
+
+/* ──────────────────────────
+   Context
+────────────────────────── */
 
 interface HubsContextValue {
   hubs: Hub[];
   getHub: (id: HubId) => Hub;
-  dispatch: React.Dispatch<HubAction>;
   addHub: (hub: Hub) => void;
   removeHub: (id: HubId) => void;
-  updateHub: (id: HubId, updatedHub: Hub) => Hub;
+  replaceHub: (id: HubId, hub: Hub) => Hub;
+  processTelemetryEvent: (id: HubId, event: TelemetryEvent) => void;
   disconnectHub: (id: HubId) => void;
 }
 
 export const HubsContext = createContext<HubsContextValue | undefined>(undefined);
 
-const idleHub: Hub = { id: "untitled", name: "Untitled", status: HubStatus.Idle };
+/* ──────────────────────────
+   Initial hub
+────────────────────────── */
+
+const idleHub: Hub = {
+  id: "untitled",
+  name: "Untitled",
+  status: HubStatus.Idle,
+  model: {},
+};
+
+/* ──────────────────────────
+   Reducer helpers
+────────────────────────── */
+
+function applyTelemetryToModel(prevModel: HubModel | undefined, event: TelemetryEvent): HubModel {
+  const nextModel: HubModel = {
+    ...prevModel,
+    motors: prevModel?.motors ? new Map(prevModel.motors) : undefined,
+  };
+
+  switch (event.type) {
+    case "HubInfo":
+      nextModel.hubType = event.hubType;
+      break;
+
+    case "HubStatus":
+      nextModel.batteryPercentage = event.batteryPercentage;
+      break;
+
+    case "HubIMU":
+      nextModel.imu = {
+        pitch: event.pitch,
+        roll: event.roll,
+        yaw: event.yaw,
+      };
+      break;
+
+    case "MotorLimits": {
+      nextModel.motors ||= new Map();
+      const prevMotor = nextModel.motors.get(event.portIndex);
+
+      nextModel.motors.set(event.portIndex, {
+        ...prevMotor,
+        limits: {
+          speed: event.speed,
+          acceleration: event.acceleration,
+          torque: event.torque,
+        },
+      });
+      break;
+    }
+
+    case "MotorStatus": {
+      nextModel.motors ||= new Map();
+      const prevMotor = nextModel.motors.get(event.portIndex);
+
+      nextModel.motors.set(event.portIndex, {
+        ...prevMotor,
+        angle: event.angle,
+        speed: event.speed,
+        load: event.load,
+        isStalled: event.isStalled,
+      });
+      break;
+    }
+
+    case "SensorStatus":
+      // intentionally unhandled for now
+      break;
+  }
+
+  return nextModel;
+}
+
+/* ──────────────────────────
+   Reducer
+────────────────────────── */
 
 function hubsReducer(state: Map<HubId, Hub>, action: HubAction): Map<HubId, Hub> {
+  const nextState = new Map(state);
+
   switch (action.type) {
-    case "ADD_HUB": {
-      const next = new Map(state);
-      next.set(action.hub.id, action.hub);
-      return next;
-    }
-    case "REMOVE_HUB": {
-      const next = new Map(state);
-      next.delete(action.id);
-      return next;
-    }
-    case "UPDATE_HUB": {
-      const next = new Map(state);
-      next.set(action.id, action.updatedHub);
-      return next;
-    }
+    case "ADD_HUB":
+      nextState.set(action.hub.id, action.hub);
+      return nextState;
+
+    case "REMOVE_HUB":
+      nextState.delete(action.id);
+      return nextState;
+
     case "DISCONNECT_HUB": {
-      const next = new Map(state);
-      const hub = next.get(action.id);
+      const hub = nextState.get(action.id);
+      if (!hub) return state;
 
-      const disconnectedHub = { ...hub, status: HubStatus.Idle };
-      delete disconnectedHub.device;
-      delete disconnectedHub.capabilities;
+      nextState.set(action.id, {
+        id: hub.id,
+        name: hub.name,
+        status: HubStatus.Idle,
+        model: {},
+      });
 
-      next.set(action.id, disconnectedHub as Hub);
-      return next;
+      return nextState;
+    }
+
+    case "HUB_TELEMETRY_RECEIVED": {
+      const hub = nextState.get(action.id);
+      if (!hub) return state;
+
+      const updatedModel = applyTelemetryToModel(hub.model, action.event);
+
+      nextState.set(action.id, {
+        ...hub,
+        model: updatedModel,
+      });
+
+      return nextState;
     }
 
     default:
@@ -56,16 +152,20 @@ function hubsReducer(state: Map<HubId, Hub>, action: HubAction): Map<HubId, Hub>
   }
 }
 
+/* ──────────────────────────
+   Provider
+────────────────────────── */
+
 export function HubsProvider({ children }: { children: React.ReactNode }) {
-  const [hubs, dispatch] = useReducer(hubsReducer, new Map<HubId, Hub>([[idleHub.id, idleHub]]));
+  const [state, dispatch] = useReducer(hubsReducer, new Map<HubId, Hub>([[idleHub.id, idleHub]]));
 
   const getHub = useCallback(
     (id: HubId) => {
-      const hub = hubs.get(id);
+      const hub = state.get(id);
       if (!hub) throw new Error(`Hub not found: ${id}`);
       return hub;
     },
-    [hubs]
+    [state],
   );
 
   const addHub = useCallback((hub: Hub) => {
@@ -76,9 +176,14 @@ export function HubsProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: "REMOVE_HUB", id });
   }, []);
 
-  const updateHub = useCallback((id: HubId, updatedHub: Hub) => {
-    dispatch({ type: "UPDATE_HUB", id, updatedHub });
-    return updatedHub;
+  const replaceHub = useCallback((id: HubId, hub: Hub) => {
+    dispatch({ type: "REMOVE_HUB", id });
+    dispatch({ type: "ADD_HUB", hub });
+    return hub;
+  }, []);
+
+  const processTelemetryEvent = useCallback((id: HubId, event: TelemetryEvent) => {
+    dispatch({ type: "HUB_TELEMETRY_RECEIVED", id, event });
   }, []);
 
   const disconnectHub = useCallback((id: HubId) => {
@@ -88,12 +193,12 @@ export function HubsProvider({ children }: { children: React.ReactNode }) {
   return (
     <HubsContext.Provider
       value={{
-        hubs: Array.from(hubs.values()),
+        hubs: Array.from(state.values()),
         getHub,
-        dispatch,
         addHub,
         removeHub,
-        updateHub,
+        replaceHub,
+        processTelemetryEvent,
         disconnectHub,
       }}
     >

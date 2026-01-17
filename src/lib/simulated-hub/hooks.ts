@@ -1,6 +1,6 @@
 import * as DeviceUtils from "@/lib/device/utils";
 import * as HubUtils from "@/lib/hub/utils";
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import * as HubHooks from "../hub/hooks";
 import { useHubsContext } from "../hub/hooks";
 import { programMain1, programMain2 } from "../hub/program";
@@ -8,66 +8,68 @@ import { Hub, HubStatus } from "../hub/types";
 import { TelemetryEvent } from "../telemetry/types";
 import { delay } from "../utils";
 
+const onDisconnectRefs = new Map<string, HubHooks.DisconnectHandler>();
+const onTerminalOutputRefs = new Map<string, HubHooks.TerminalOutputHandler>();
+const onTelemetryEventRefs = new Map<string, HubHooks.TelemetryEventHandler>();
+
 export function useHub(): ReturnType<typeof HubHooks.useHub> {
-  const { updateHub, disconnectHub } = useHubsContext();
-  const onDisconnectRef = useRef<HubHooks.DisconnectHandler>(() => {});
-  const onTerminalOutputRef = useRef<HubHooks.TerminalOutputHandler>(() => {});
-  const onTelemetryEventRef = useRef<HubHooks.TelemetryEventHandler>(() => {});
+  const { replaceHub, processTelemetryEvent, disconnectHub } = useHubsContext();
 
   const connect = useCallback(
     async (hub: Hub, options: HubHooks.ConnectOptions) => {
       const connectingDevice = { gatt: { connected: false } } as BluetoothDevice;
-      const connectingHub = updateHub(hub.id, {
+      const connectingHub = replaceHub(hub.id, {
         ...hub,
         status: HubStatus.Connecting,
         name: "Simulated Hub",
         device: connectingDevice,
       });
 
-      onDisconnectRef.current = options.onDisconnect;
+      onDisconnectRefs.set(hub.id, options.onDisconnect);
 
-      await delay(500);
+      await delay(300);
 
       const connectedDevice = {
         gatt: { connected: true, disconnect: () => disconnectHub(hub.id) },
       } as BluetoothDevice;
 
-      return updateHub(hub.id, {
+      return replaceHub(hub.id, {
         ...connectingHub,
         status: HubStatus.Connected,
         device: connectedDevice,
       });
     },
-    [updateHub, disconnectHub],
+    [replaceHub, disconnectHub],
   );
 
   const startNotifications = useCallback(
     async (hub: Hub, options: HubHooks.StartNotificationsOptions) => {
       DeviceUtils.assertConnected(hub.device);
 
-      const startingNotificationsHub = updateHub(hub.id, {
+      const startingNotificationsHub = replaceHub(hub.id, {
         ...hub,
         status: HubStatus.StartingNotifications,
       });
 
-      await delay(300);
+      await delay(100);
 
-      onTerminalOutputRef.current = options.onTerminalOutput;
-      onTelemetryEventRef.current = options.onTelemetryEvent;
+      onTerminalOutputRefs.set(hub.id, options.onTerminalOutput);
 
-      return updateHub(hub.id, {
+      onTelemetryEventRefs.set(hub.id, (telemetryEvent) => {
+        processTelemetryEvent(hub.id, telemetryEvent);
+        options.onTelemetryEvent(telemetryEvent);
+      });
+
+      return replaceHub(hub.id, {
         ...startingNotificationsHub,
         status: HubStatus.Ready,
       });
     },
-    [updateHub],
+    [replaceHub],
   );
 
   const stopNotifications = useCallback(async (hub: Hub) => {
     if (!HubUtils.isConnected(hub)) return;
-
-    onTerminalOutputRef.current = () => {};
-    onTelemetryEventRef.current = () => {};
 
     await delay(0);
   }, []);
@@ -76,7 +78,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
     async (hub: Hub) => {
       DeviceUtils.assertConnected(hub.device);
 
-      const retrievingCapabilitiesHub = updateHub(hub.id, {
+      const retrievingCapabilitiesHub = replaceHub(hub.id, {
         ...hub,
         status: HubStatus.RetrievingCapabilities,
       });
@@ -84,20 +86,20 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
       await delay(500);
       const capabilities = { maxWriteSize: 148 };
 
-      return updateHub(hub.id, {
+      return replaceHub(hub.id, {
         ...retrievingCapabilitiesHub,
         status: HubStatus.Ready,
         capabilities,
       });
     },
-    [updateHub],
+    [replaceHub],
   );
 
   const startRepl = useCallback(
     async (hub: Hub) => {
       DeviceUtils.assertConnected(hub.device);
 
-      const startingReplHub = updateHub(hub.id, {
+      const startingReplHub = replaceHub(hub.id, {
         ...hub,
         status: HubStatus.StartingRepl,
       });
@@ -108,23 +110,23 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       for (let i = 0; i < programSize; i += chunkSize) {
         const chunk = program.slice(i, i + chunkSize);
-        onTerminalOutputRef.current(chunk);
+        onTerminalOutputRefs.get(hub.id)!(chunk);
         await delay(100);
       }
 
-      return updateHub(hub.id, {
+      return replaceHub(hub.id, {
         ...startingReplHub,
         status: HubStatus.Ready,
       });
     },
-    [updateHub],
+    [replaceHub],
   );
 
   const launchProgram = useCallback(
     async (hub: Hub, options: HubHooks.LaunchProgramOptions) => {
       DeviceUtils.assertConnected(hub.device);
 
-      const launchingProgramHub = updateHub(hub.id, {
+      const launchingProgramHub = replaceHub(hub.id, {
         ...hub,
         status: HubStatus.LaunchingProgram,
       });
@@ -134,7 +136,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
         await delay(100);
       }
 
-      const runningHub = updateHub(hub.id, {
+      const runningHub = replaceHub(hub.id, {
         ...launchingProgramHub,
         status: HubStatus.Running,
       });
@@ -165,20 +167,20 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
       ];
 
       for (const event of telemetryEvents) {
-        onTelemetryEventRef.current(event);
+        onTelemetryEventRefs.get(hub.id)!(event);
         await delay(100);
       }
 
       return runningHub;
     },
-    [updateHub],
+    [replaceHub],
   );
 
   const disconnect = useCallback(
     async (hub: Hub) => {
       if (HubUtils.isConnected(hub)) {
+        onDisconnectRefs.get(hub.id)!();
         await stopNotifications(hub);
-        onDisconnectRef.current();
         return disconnectHub(hub.id);
       }
     },

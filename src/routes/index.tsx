@@ -107,7 +107,6 @@ function HubDashboard({ hub }: { hub: Hub }) {
   }
 
   function handleDisconnect() {
-    debugger;
     setTerminalOutput("");
     setTelemetryEvents([]);
     setLaunchProgramProgress(0);

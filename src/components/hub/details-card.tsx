@@ -5,6 +5,7 @@ import { Hub, HubStatus } from "@/lib/hub/types";
 import * as HubUtils from "@/lib/hub/utils";
 import { useModeContext } from "@/lib/mode/hooks";
 import * as SimulatedHubHooks from "@/lib/simulated-hub/hooks";
+import { styled } from "styled-system/jsx";
 
 export function DetailsCard({ hub, launchProgramProgress }: { hub: Hub; launchProgramProgress: number }) {
   const { simulated } = useModeContext();
@@ -50,6 +51,12 @@ export function DetailsCard({ hub, launchProgramProgress }: { hub: Hub; launchPr
             </Table.Row>
           </Table.Body>
         </Table.Root>
+        <styled.pre mt="4" fontSize="xs" fontFamily="mono" whiteSpace="pre-wrap" wordBreak="break-all" p="2" bg="gray.2" borderRadius="l1">
+          Hub: {JSON.stringify(hub.model) ?? "{}"}
+        </styled.pre>
+        <styled.pre mt="4" fontSize="xs" fontFamily="mono" whiteSpace="pre-wrap" wordBreak="break-all" p="2" bg="gray.2" borderRadius="l1">
+          Motors: {JSON.stringify(Object.fromEntries(hub.model?.motors ?? new Map())) ?? "{}"}
+        </styled.pre>
       </Card.Body>
     </Card.Root>
   );

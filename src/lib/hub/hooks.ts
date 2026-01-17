@@ -13,7 +13,7 @@ import { programMain1, programMain2 } from "./program";
 import { Hub, HubCapabilities, HubId, HubStatus } from "./types";
 
 export function useHub() {
-  const { updateHub, disconnectHub } = useHubsContext();
+  const { replaceHub, processTelemetryEvent, disconnectHub } = useHubsContext();
   const listenerRefs = useRef<Map<HubId, (event: Event) => void>>(new Map());
 
   const connect = useCallback(
@@ -27,7 +27,7 @@ export function useHub() {
         throw error;
       }
 
-      const connectingHub = updateHub(hub.id, { ...hub, status: HubStatus.Connecting, name: device.name ?? hub.name, device });
+      const connectingHub = replaceHub(hub.id, { ...hub, status: HubStatus.Connecting, name: device.name ?? hub.name, device });
 
       device.addEventListener("gattserverdisconnected", () => {
         disconnectHub(hub.id);
@@ -36,15 +36,15 @@ export function useHub() {
 
       await device.gatt?.connect();
 
-      return updateHub(hub.id, { ...connectingHub, status: HubStatus.Connected });
+      return replaceHub(hub.id, { ...connectingHub, status: HubStatus.Connected });
     },
-    [updateHub],
+    [replaceHub],
   );
 
   const startNotifications = useCallback(async (hub: Hub, options: StartNotificationsOptions) => {
     DeviceUtls.assertConnected(hub.device);
 
-    const startingNotificationsHub = updateHub(hub.id, { ...hub, status: HubStatus.StartingNotifications });
+    const startingNotificationsHub = replaceHub(hub.id, { ...hub, status: HubStatus.StartingNotifications });
     const characteristic = await PybricksCommands.getPybricksControlCharacteristic(hub.device);
 
     const existingListener = listenerRefs.current.get(hub.id);
@@ -68,6 +68,7 @@ export function useHub() {
 
         if (notification.eventType === EventType.WriteAppData) {
           const telemetryEvent = TelemetryParsing.parseTelemetryEvent(notification.data);
+          processTelemetryEvent(hub.id, telemetryEvent);
           options.onTelemetryEvent(telemetryEvent);
         }
       }
@@ -76,7 +77,7 @@ export function useHub() {
     listenerRefs.current.set(hub.id, listener);
     characteristic.addEventListener("characteristicvaluechanged", listener);
 
-    return updateHub(hub.id, { ...startingNotificationsHub, status: HubStatus.Ready });
+    return replaceHub(hub.id, { ...startingNotificationsHub, status: HubStatus.Ready });
   }, []);
 
   const stopNotifications = useCallback(async (hub: Hub) => {
@@ -96,49 +97,49 @@ export function useHub() {
     async (hub: Hub) => {
       DeviceUtls.assertConnected(hub.device);
 
-      const retrievingCapabilitiesHub = updateHub(hub.id, { ...hub, status: HubStatus.RetrievingCapabilities });
+      const retrievingCapabilitiesHub = replaceHub(hub.id, { ...hub, status: HubStatus.RetrievingCapabilities });
       const characteristic = await PybricksCommands.getPybricksHubCapabilitiesCharacteristic(hub.device);
 
       const value = await characteristic.readValue();
       const maxWriteSize = value.getUint16(0, true);
       const capabilities: HubCapabilities = { maxWriteSize };
 
-      return updateHub(hub.id, { ...retrievingCapabilitiesHub, status: HubStatus.Ready, capabilities });
+      return replaceHub(hub.id, { ...retrievingCapabilitiesHub, status: HubStatus.Ready, capabilities });
     },
-    [updateHub],
+    [replaceHub],
   );
 
   const startRepl = useCallback(
     async (hub: Hub) => {
-      const startingReplHub = updateHub(hub.id, { ...hub, status: HubStatus.StartingRepl });
+      const startingReplHub = replaceHub(hub.id, { ...hub, status: HubStatus.StartingRepl });
       await HubCommands.startRepl(hub);
 
-      return updateHub(hub.id, { ...startingReplHub, status: HubStatus.Ready });
+      return replaceHub(hub.id, { ...startingReplHub, status: HubStatus.Ready });
     },
-    [updateHub],
+    [replaceHub],
   );
 
   const launchProgram = useCallback(
     async (hub: Hub, options: { onProgress: (progress: number) => void }) => {
       DeviceUtls.assertConnected(hub.device);
 
-      const launcningProgramHub = updateHub(hub.id, { ...hub, status: HubStatus.LaunchingProgram });
+      const launcningProgramHub = replaceHub(hub.id, { ...hub, status: HubStatus.LaunchingProgram });
 
       const programs = [programMain1, programMain2];
 
       for (let i = 0; i < programs.length; i++) {
         function handleProgress(progress: number) {
-          options?.onProgress((i + progress) / programs.length);
+          options?.onProgress(progress / 2 + (i / programs.length) * 100);
         }
 
         await HubCommands.enterPasteMode(hub);
-        await HubCommands.writeStdinWithResponse(hub, programMain1, { onProgress: handleProgress });
+        await HubCommands.writeStdinWithResponse(hub, programs[i], { onProgress: handleProgress });
         await HubCommands.exitPasteMode(hub);
       }
 
-      return updateHub(hub.id, { ...launcningProgramHub, status: HubStatus.Running });
+      return replaceHub(hub.id, { ...launcningProgramHub, status: HubStatus.Running });
     },
-    [updateHub],
+    [replaceHub],
   );
 
   const disconnect = useCallback(
@@ -149,7 +150,7 @@ export function useHub() {
         return disconnectHub(hub.id);
       }
     },
-    [updateHub],
+    [replaceHub],
   );
 
   return {
@@ -173,7 +174,7 @@ export type DisconnectHandler = () => void;
 export type ConnectOptions = { onDisconnect: DisconnectHandler };
 
 export type TerminalOutputHandler = (output: string) => void;
-export type TelemetryEventHandler = (event: TelemetryEvent) => void;
+export type TelemetryEventHandler = (telemetryEvent: TelemetryEvent) => void;
 export type StartNotificationsOptions = { onTerminalOutput: TerminalOutputHandler; onTelemetryEvent: TelemetryEventHandler };
 
 export type LaunchProgramProgressHandler = (progress: number) => void;
