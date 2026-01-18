@@ -7,6 +7,7 @@ import { useHubsContext } from "../hub/hooks";
 import { programMain1, programMain2 } from "../hub/program";
 import { Hub, HubStatus } from "../hub/types";
 import { CommandType } from "../pybricks/protocol";
+import { SensorType } from "../sensor/type";
 import { TelemetryEvent } from "../telemetry/types";
 import { delay } from "../utils";
 
@@ -160,7 +161,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
         status: HubStatus.Running,
       });
 
-      const sensorType = { id: "color-distance-sensor", name: "Color & Distance Sensor" };
+      const sensorType: SensorType = { id: "color-distance-sensor", name: "Color Distance Sensor" };
 
       const telemetryEvents: TelemetryEvent[] = [
         { type: "HubInfo", hubType: { id: "technic-hub", name: "Technic Hub" } },
@@ -170,21 +171,21 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
         { type: "HubIMU", pitch: 13, roll: 37, heading: 42 },
         { type: "MotorState", port: 0, angle: 1234, speed: 56, load: 78, isStalled: false },
-        { type: "SensorState", port: 0, sensorType, value0: 100, value1: 120, value2: 80, value3: 90 },
+        { type: "SensorState", port: 0, sensorType, value0: 100, value1: 15, value2: 80, value3: 40 },
 
         { type: "HubIMU", pitch: 14, roll: 38, heading: 43 },
         { type: "MotorState", port: 0, angle: 14, speed: 60, load: 75, isStalled: false },
-        { type: "SensorState", port: 0, sensorType, value0: 98, value1: 121, value2: 81, value3: 91 },
+        { type: "SensorState", port: 0, sensorType, value0: 98, value1: 14, value2: 81, value3: 64 },
 
         { type: "HubIMU", pitch: 15, roll: 42, heading: 64 },
         { type: "MotorState", port: 0, angle: 14, speed: 30, load: 56, isStalled: false },
-        { type: "SensorState", port: 0, sensorType, value0: 95, value1: 122, value2: 82, value3: 92 },
+        { type: "SensorState", port: 0, sensorType, value0: 95, value1: 16, value2: 92, value3: 61 },
 
         { type: "HubState", batteryPercentage: 77 },
 
         { type: "HubIMU", pitch: 16, roll: 64, heading: 128 },
         { type: "MotorState", port: 0, angle: 14, speed: 0, load: 0, isStalled: true },
-        { type: "SensorState", port: 0, sensorType, value0: 93, value1: 123, value2: 83, value3: 93 },
+        { type: "SensorState", port: 0, sensorType, value0: 93, value1: 14, value2: 100, value3: 57 },
       ];
 
       for (const event of telemetryEvents) {

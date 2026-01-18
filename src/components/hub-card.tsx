@@ -35,40 +35,7 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
         )}
       </Card.Header>
       <Card.Body>
-        <PropertyList.Root>
-          {hub.type !== undefined && (
-            <PropertyList.Item>
-              <PropertyList.Label>Type</PropertyList.Label>
-              <PropertyList.Value>{hub.type.name}</PropertyList.Value>
-            </PropertyList.Item>
-          )}
-          <PropertyList.Item>
-            <PropertyList.Label>Status</PropertyList.Label>
-            <PropertyList.Value>
-              <StatusBadge status={hub.status} />
-            </PropertyList.Value>
-          </PropertyList.Item>
-          {hub.status === HubStatus.LaunchingProgram && (
-            <PropertyList.Item>
-              <PropertyList.Label>Progress</PropertyList.Label>
-              <PropertyList.Value placeSelf="auto">
-                <Progress.Default value={launchProgramProgress} colorPalette="[success]">
-                  <Progress.ValueText />
-                </Progress.Default>
-              </PropertyList.Value>
-            </PropertyList.Item>
-          )}
-          {hub.batteryPercentage !== undefined && (
-            <PropertyList.Item>
-              <PropertyList.Label>Battery</PropertyList.Label>
-              <PropertyList.Value placeSelf="end">
-                <Progress.Default value={hub.batteryPercentage} w="32" {...batteryPercentageColorPaletteProps(hub.batteryPercentage)}>
-                  <Progress.ValueText />
-                </Progress.Default>
-              </PropertyList.Value>
-            </PropertyList.Item>
-          )}
-        </PropertyList.Root>
+        <HubDetailsSection hub={hub} launchProgramProgress={launchProgramProgress} />
       </Card.Body>
       <Card.Footer>
         <Button variant="plain" onClick={handleShutdown} disabled={!HubUtils.isAtLeastStatus(hub, HubStatus.Running)}>
@@ -79,6 +46,45 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
         </Button>
       </Card.Footer>
     </Card.Root>
+  );
+}
+
+function HubDetailsSection({ hub, launchProgramProgress }: { hub: Hub; launchProgramProgress: number }) {
+  return (
+    <PropertyList.Root>
+      {hub.type !== undefined && (
+        <PropertyList.Item>
+          <PropertyList.Label>Type</PropertyList.Label>
+          <PropertyList.Value>{hub.type.name}</PropertyList.Value>
+        </PropertyList.Item>
+      )}
+      <PropertyList.Item>
+        <PropertyList.Label>Status</PropertyList.Label>
+        <PropertyList.Value>
+          <StatusBadge status={hub.status} />
+        </PropertyList.Value>
+      </PropertyList.Item>
+      {hub.status === HubStatus.LaunchingProgram && (
+        <PropertyList.Item>
+          <PropertyList.Label>Progress</PropertyList.Label>
+          <PropertyList.Value placeSelf="auto">
+            <Progress.Default value={launchProgramProgress} colorPalette="[success]">
+              <Progress.ValueText />
+            </Progress.Default>
+          </PropertyList.Value>
+        </PropertyList.Item>
+      )}
+      {hub.batteryPercentage !== undefined && (
+        <PropertyList.Item>
+          <PropertyList.Label>Battery</PropertyList.Label>
+          <PropertyList.Value placeSelf="end">
+            <Progress.Default value={hub.batteryPercentage} w="32" {...batteryPercentageColorPaletteProps(hub.batteryPercentage)}>
+              <Progress.ValueText />
+            </Progress.Default>
+          </PropertyList.Value>
+        </PropertyList.Item>
+      )}
+    </PropertyList.Root>
   );
 }
 

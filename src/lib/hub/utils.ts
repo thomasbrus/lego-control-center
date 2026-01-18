@@ -16,3 +16,8 @@ export function isConnected(hub: Hub): boolean {
 export function isRunning(hub: Hub): boolean {
   return isAtLeastStatus(hub, HubStatus.Running);
 }
+
+export function portName(port: number) {
+  const names = ["A", "B", "C", "D", "E", "F"];
+  return names[port];
+}

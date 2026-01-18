@@ -341,7 +341,7 @@ async def process_app_data_command_loop():
 async def update_sensor_states_loop():
     while True:
         await sensors_controller.update_states()
-        await wait(500)
+        await wait(100)
 
 async def broadcast_telemetry_loop():
     data = telemetry_collector.collect_hub_info()
@@ -358,6 +358,9 @@ async def broadcast_telemetry_loop():
         for i in range(10):
             data = telemetry_collector.collect_hub_imu()
             await app_data.write_bytes(data)
+
+            for data in telemetry_collector.collect_motor_states():
+                await app_data.write_bytes(data)
 
             for data in telemetry_collector.collect_sensor_states():
                 await app_data.write_bytes(data)

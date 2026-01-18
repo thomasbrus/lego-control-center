@@ -3,7 +3,4 @@ export interface Sensor {
   values: [number, number, number, number];
 }
 
-export interface SensorType {
-  id: string;
-  name: string;
-}
+export type SensorType = { id: "color-distance-sensor"; name: "Color Distance Sensor" };

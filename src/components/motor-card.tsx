@@ -1,4 +1,5 @@
 import { Badge, Button, Card, Icon, Input, InputGroup, Progress, PropertyList, Slider, Text } from "@/components/ui";
+import { portName } from "@/lib/hub/utils";
 import { Motor, MotorLimits } from "@/lib/motor/types";
 import { CableIcon, CircleGaugeIcon, GaugeIcon, ZapIcon } from "lucide-react";
 import { useState } from "react";
@@ -7,7 +8,7 @@ import { Flex, Grid, styled } from "styled-system/jsx";
 export function MotorCard({ port, motor }: { port: number; motor: Motor }) {
   return (
     <Card.Root>
-      <Card.Header flexDirection="row" justifyContent="space-between" alignItems="center" gap="4">
+      <Card.Header>
         <Card.Title display="flex" alignItems="center" gap="2">
           <Icon size="md">
             <CableIcon />
@@ -16,15 +17,15 @@ export function MotorCard({ port, motor }: { port: number; motor: Motor }) {
         </Card.Title>
       </Card.Header>
       <Card.Body gap="6">
-        <MotorControlBox motor={motor} />
-        <MotorStateBox motor={motor} />
-        {motor.limits && <MotorLimitsBox limits={motor.limits} />}
+        <MotorControlSection motor={motor} />
+        <MotorStateSection motor={motor} />
+        {motor.limits && <MotorLimitsSection limits={motor.limits} />}
       </Card.Body>
     </Card.Root>
   );
 }
 
-function MotorControlBox({}: { motor: Motor }) {
+function MotorControlSection({}: { motor: Motor }) {
   const [targetAngle, setTargetAngle] = useState(0);
   const [targetSpeed, setTargetSpeed] = useState(0);
 
@@ -79,7 +80,7 @@ function MotorControlBox({}: { motor: Motor }) {
   );
 }
 
-function MotorStateBox({ motor }: { motor: Motor }) {
+function MotorStateSection({ motor }: { motor: Motor }) {
   const absoluteSpeedPercentage = Math.abs(speedPercentage(motor));
   const absoluteLoadPercentage = Math.abs(loadPercentage(motor));
 
@@ -124,7 +125,7 @@ function MotorStateBox({ motor }: { motor: Motor }) {
   );
 }
 
-function MotorLimitsBox({ limits }: { limits: MotorLimits }) {
+function MotorLimitsSection({ limits }: { limits: MotorLimits }) {
   return (
     <Flex p="4" borderRadius="l2" flexWrap="wrap" justifyContent="space-around" alignItems="center" borderWidth="1" borderColor="border">
       <Text textStyle="label" mr="4">
@@ -153,11 +154,6 @@ function MotorLimitsBox({ limits }: { limits: MotorLimits }) {
       </styled.div>
     </Flex>
   );
-}
-
-function portName(port: number) {
-  const names = ["A", "B", "C", "D", "E", "F"];
-  return names[port];
 }
 
 function speedPercentage(motor: Motor) {
