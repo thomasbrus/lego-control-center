@@ -17,7 +17,7 @@ export function MotorCard({ port, motor }: { port: number; motor: Motor }) {
       </Card.Header>
       <Card.Body gap="6">
         <MotorControlBox motor={motor} />
-        <MotorStatusBox motor={motor} />
+        <MotorStateBox motor={motor} />
         {motor.limits && <MotorLimitsBox limits={motor.limits} />}
       </Card.Body>
     </Card.Root>
@@ -79,13 +79,13 @@ function MotorControlBox({}: { motor: Motor }) {
   );
 }
 
-function MotorStatusBox({ motor }: { motor: Motor }) {
+function MotorStateBox({ motor }: { motor: Motor }) {
   const absoluteSpeedPercentage = Math.abs(speedPercentage(motor));
   const absoluteLoadPercentage = Math.abs(loadPercentage(motor));
 
   return (
     <Grid borderRadius="l2" bg="gray.2" gap="4" p="4">
-      <Text textStyle="label">Status</Text>
+      <Text textStyle="label">State</Text>
       <PropertyList.Root>
         <PropertyList.Item mt="2">
           <PropertyList.Label display="flex" alignItems="center" gap="2">

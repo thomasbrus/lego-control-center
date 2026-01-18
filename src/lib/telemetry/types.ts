@@ -1,14 +1,15 @@
 import { HubType } from "../hub/types";
+import { SensorType } from "../sensor/type";
 
-export type TelemetryType = "HubInfo" | "HubPhase" | "HubIMU" | "MotorLimits" | "MotorStatus" | "SensorStatus";
+export type TelemetryType = "HubInfo" | "HubState" | "HubIMU" | "MotorLimits" | "MotorState" | "SensorState";
 
 export interface HubInfoTelemetry {
   type: "HubInfo";
   hubType: HubType;
 }
 
-export interface HubPhaseTelemetry {
-  type: "HubPhase";
+export interface HubStateTelemetry {
+  type: "HubState";
   batteryPercentage: number;
 }
 
@@ -21,35 +22,35 @@ export interface HubIMUTelemetry {
 
 export interface MotorLimitsTelemetry {
   type: "MotorLimits";
-  portIndex: number;
+  port: number;
   speed: number;
   acceleration: number;
   torque: number;
 }
 
-export interface MotorStatusTelemetry {
-  type: "MotorStatus";
-  portIndex: number;
+export interface MotorStateTelemetry {
+  type: "MotorState";
+  port: number;
   angle: number;
   speed: number;
   load: number;
   isStalled: boolean;
 }
 
-export interface SensorStatusTelemetry {
-  type: "SensorStatus";
-  portIndex: number;
-  sensorType: number;
-  distance: number;
-  hue: number;
-  saturation: number;
-  value: number;
+export interface SensorStateTelemetry {
+  type: "SensorState";
+  port: number;
+  sensorType: SensorType;
+  value0: number;
+  value1: number;
+  value2: number;
+  value3: number;
 }
 
 export type TelemetryEvent =
   | HubInfoTelemetry
-  | HubPhaseTelemetry
+  | HubStateTelemetry
   | HubIMUTelemetry
   | MotorLimitsTelemetry
-  | MotorStatusTelemetry
-  | SensorStatusTelemetry;
+  | MotorStateTelemetry
+  | SensorStateTelemetry;

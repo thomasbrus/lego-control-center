@@ -5,7 +5,7 @@ import * as HubCommands from "../hub/commands";
 import * as HubHooks from "../hub/hooks";
 import { useHubsContext } from "../hub/hooks";
 import { programMain1, programMain2 } from "../hub/program";
-import { Hub, HubPhase } from "../hub/types";
+import { Hub, HubStatus } from "../hub/types";
 import { CommandType } from "../pybricks/protocol";
 import { TelemetryEvent } from "../telemetry/types";
 import { delay } from "../utils";
@@ -22,7 +22,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
       const connectingDevice = { gatt: { connected: false } } as BluetoothDevice;
       const connectingHub = replaceHub(hub.id, {
         ...hub,
-        phase: HubPhase.Connecting,
+        status: HubStatus.Connecting,
         name: "Simulated Hub",
         device: connectingDevice,
       });
@@ -54,7 +54,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       return replaceHub(hub.id, {
         ...connectingHub,
-        phase: HubPhase.Connected,
+        status: HubStatus.Connected,
         device: connectedDevice,
       });
     },
@@ -67,7 +67,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       const startingNotificationsHub = replaceHub(hub.id, {
         ...hub,
-        phase: HubPhase.StartingNotifications,
+        status: HubStatus.StartingNotifications,
       });
 
       await delay(100);
@@ -81,7 +81,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       return replaceHub(hub.id, {
         ...startingNotificationsHub,
-        phase: HubPhase.Ready,
+        status: HubStatus.Ready,
       });
     },
     [replaceHub],
@@ -99,7 +99,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       const retrievingCapabilitiesHub = replaceHub(hub.id, {
         ...hub,
-        phase: HubPhase.RetrievingCapabilities,
+        status: HubStatus.RetrievingCapabilities,
       });
 
       await delay(500);
@@ -107,7 +107,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       return replaceHub(hub.id, {
         ...retrievingCapabilitiesHub,
-        phase: HubPhase.Ready,
+        status: HubStatus.Ready,
         capabilities,
       });
     },
@@ -120,12 +120,12 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       const startingReplHub = replaceHub(hub.id, {
         ...hub,
-        phase: HubPhase.StartingRepl,
+        status: HubStatus.StartingRepl,
       });
 
       return replaceHub(hub.id, {
         ...startingReplHub,
-        phase: HubPhase.Ready,
+        status: HubStatus.Ready,
       });
     },
     [replaceHub],
@@ -137,7 +137,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       const launchingProgramHub = replaceHub(hub.id, {
         ...hub,
-        phase: HubPhase.LaunchingProgram,
+        status: HubStatus.LaunchingProgram,
       });
 
       const program = programMain1 + programMain2;
@@ -157,32 +157,34 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       const runningHub = replaceHub(hub.id, {
         ...launchingProgramHub,
-        phase: HubPhase.Running,
+        status: HubStatus.Running,
       });
+
+      const sensorType = { id: "color-distance-sensor", name: "Color & Distance Sensor" };
 
       const telemetryEvents: TelemetryEvent[] = [
         { type: "HubInfo", hubType: { id: "technic-hub", name: "Technic Hub" } },
-        { type: "MotorLimits", portIndex: 0, speed: 1000, acceleration: 200, torque: 50 },
+        { type: "MotorLimits", port: 0, speed: 1000, acceleration: 200, torque: 50 },
 
-        { type: "HubPhase", batteryPercentage: 78 },
+        { type: "HubState", batteryPercentage: 78 },
 
         { type: "HubIMU", pitch: 13, roll: 37, heading: 42 },
-        { type: "MotorStatus", portIndex: 0, angle: 1234, speed: 56, load: 78, isStalled: false },
-        { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 100, hue: 120, saturation: 80, value: 90 },
+        { type: "MotorState", port: 0, angle: 1234, speed: 56, load: 78, isStalled: false },
+        { type: "SensorState", port: 0, sensorType, value0: 100, value1: 120, value2: 80, value3: 90 },
 
         { type: "HubIMU", pitch: 14, roll: 38, heading: 43 },
-        { type: "MotorStatus", portIndex: 0, angle: 14, speed: 60, load: 75, isStalled: false },
-        { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 98, hue: 121, saturation: 81, value: 91 },
+        { type: "MotorState", port: 0, angle: 14, speed: 60, load: 75, isStalled: false },
+        { type: "SensorState", port: 0, sensorType, value0: 98, value1: 121, value2: 81, value3: 91 },
 
         { type: "HubIMU", pitch: 15, roll: 42, heading: 64 },
-        { type: "MotorStatus", portIndex: 0, angle: 14, speed: 30, load: 56, isStalled: false },
-        { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 95, hue: 122, saturation: 82, value: 92 },
+        { type: "MotorState", port: 0, angle: 14, speed: 30, load: 56, isStalled: false },
+        { type: "SensorState", port: 0, sensorType, value0: 95, value1: 122, value2: 82, value3: 92 },
 
-        { type: "HubPhase", batteryPercentage: 77 },
+        { type: "HubState", batteryPercentage: 77 },
 
         { type: "HubIMU", pitch: 16, roll: 64, heading: 128 },
-        { type: "MotorStatus", portIndex: 0, angle: 14, speed: 0, load: 0, isStalled: true },
-        { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 93, hue: 123, saturation: 83, value: 93 },
+        { type: "MotorState", port: 0, angle: 14, speed: 0, load: 0, isStalled: true },
+        { type: "SensorState", port: 0, sensorType, value0: 93, value1: 123, value2: 83, value3: 93 },
       ];
 
       for (const event of telemetryEvents) {

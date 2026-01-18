@@ -35,7 +35,7 @@ def discover_devices(*device_classes):
     return [discover_device_on_port(p, *device_classes) for p in PORTS]
 
 HUB_TYPES = {
-'<TechnicHub>': 2,
+    '<TechnicHub>': 2,
     '<InventorHub>': 3,
     '<PrimeHub>': 4,
 }
@@ -98,31 +98,36 @@ class MotorsController:
             motor.stop()
 
     def read_limits(self):
-        for port_index, motor in enumerate(self.motors):
+        for port, motor in enumerate(self.motors):
             if motor:
-                yield port_index, motor.control.limits()
+                yield port, motor.control.limits()
 
     def read_states(self):
-        for port_index, motor in enumerate(self.motors):
+        for port, motor in enumerate(self.motors):
             if motor:
-                yield port_index, motor.model.state()
-
-SENSOR_STATE_READERS = {
-    ColorDistanceSensor: (0, lambda sensor: [sensor.distance()] + list(sensor.hsv())),
-}
+                yield port, motor.model.state()
 
 class SensorsController:
     __slots__ = ("sensors",)
 
     def __init__(self):
         self.sensors = discover_devices(ColorDistanceSensor)
+        self.sensor_states = {}
         gc.collect()
 
-    def read_states(self):
-        for port_index, sensor in enumerate(self.sensors):
+    async def update_states(self):
+        for port, sensor in enumerate(self.sensors):
             if sensor:
-                sensor_type_id, read_state = SENSOR_STATE_READERS[type(sensor)]
-                yield port_index, sensor_type_id, read_state(sensor)
+                if str(sensor) == '<ColorDistanceSensor>':
+                    distance = await sensor.distance()
+                    hue, saturation, value = await sensor.hsv()
+                    self.sensor_states[port] = (distance, hue, saturation, value)
+
+    def read_states(self):
+        for port, sensor_state in self.sensor_states.items():
+            if str(self.sensors[port]) == '<ColorDistanceSensor>':
+                yield port, 2, sensor_state
+
 
 motors_controller = MotorsController()
 sensors_controller = SensorsController()
@@ -195,11 +200,11 @@ class CommandHandler:
 export const programMain2 = `
 class TelemetryType:
     HUB_INFO = const(0x10)
-    HUB_STATUS = const(0x11)
+    HUB_STATE = const(0x11)
     HUB_IMU = const(0x12)
     MOTOR_LIMITS = const(0x20)
-    MOTOR_STATUS = const(0x21)
-    SENSOR_STATUS = const(0x30)
+    MOTOR_STATE = const(0x21)
+    SENSOR_STATE = const(0x30)
 
 class TelemetryProtocol:
     MAX_SIZE = calcsize("<BBBhhhh")
@@ -209,24 +214,24 @@ class TelemetryProtocol:
     HUB_INFO_SIZE = calcsize(HUB_INFO_FORMAT)
 
     # [TelemetryType(B), BatteryPercentage(B)]
-    HUB_STATUS_FORMAT = "<BB"
-    HUB_STATUS_SIZE = calcsize(HUB_STATUS_FORMAT)
+    HUB_STATE_FORMAT = "<BB"
+    HUB_STATE_SIZE = calcsize(HUB_STATE_FORMAT)
 
     # [TelemetryType(B), Pitch(h), Roll(h), Yaw(h)]
     HUB_IMU_FORMAT = "<Bhhh"
     HUB_IMU_SIZE = calcsize(HUB_IMU_FORMAT)
 
-    # [TelemetryType(B), PortIndex(B), Speed(h), Acceleration(h), torque(h)]
+    # [TelemetryType(B), Port(B), Speed(h), Acceleration(h), torque(h)]
     MOTOR_LIMITS_FORMAT = "<BBhhh"
     MOTOR_LIMITS_SIZE = calcsize(MOTOR_LIMITS_FORMAT)
 
-    # [TelemetryType(B), PortIndex(B), Angle(h), Speed(h), Load(h), IsStalled(B)]
-    MOTOR_STATUS_FORMAT = "<BBhhhB"
-    MOTOR_STATUS_SIZE = calcsize(MOTOR_STATUS_FORMAT)
+    # [TelemetryType(B), Port(B), Angle(h), Speed(h), Load(h), IsStalled(B)]
+    MOTOR_STATE_FORMAT = "<BBhhhB"
+    MOTOR_STATE_SIZE = calcsize(MOTOR_STATE_FORMAT)
 
-    # [TelemetryType(B), PortIndex(B), SensorType(B), Distance(h), Hue(h), Saturation(h), Value(h)]
-    SENSOR_STATUS_FORMAT = "<BBBhhhh"
-    SENSOR_STATUS_SIZE = calcsize(SENSOR_STATUS_FORMAT)
+    # [TelemetryType(B), Port(B), SensorType(B), Value0(h), Value1(h), Value2(h), Value3(h)]
+    SENSOR_STATE_FORMAT = "<BBBhhhh"
+    SENSOR_STATE_SIZE = calcsize(SENSOR_STATE_FORMAT)
 
 class TelemetryCollector:
     __slots__ = ("payload",)
@@ -245,16 +250,16 @@ class TelemetryCollector:
 
         return bytes(self.payload)[:TelemetryProtocol.HUB_INFO_SIZE]
 
-    def collect_hub_status(self):
+    def collect_hub_state(self):
         pack_into(
-            TelemetryProtocol.HUB_STATUS_FORMAT,
+            TelemetryProtocol.HUB_STATE_FORMAT,
             self.payload,
             0,
-            TelemetryType.HUB_STATUS,
+            TelemetryType.HUB_STATE,
             hub_controller.battery_percentage()
         )
 
-        return bytes(self.payload)[:TelemetryProtocol.HUB_STATUS_SIZE]
+        return bytes(self.payload)[:TelemetryProtocol.HUB_STATE_SIZE]
 
     def collect_hub_imu(self):
         pitch, roll = hub.imu.tilt()
@@ -273,13 +278,13 @@ class TelemetryCollector:
         return bytes(self.payload)[:TelemetryProtocol.HUB_IMU_SIZE]
 
     def collect_motor_limits(self):
-        for port_index, motor_limits in motors_controller.read_limits():
+        for port, motor_limits in motors_controller.read_limits():
             pack_into(
                 TelemetryProtocol.MOTOR_LIMITS_FORMAT,
                 self.payload,
                 0,
                 TelemetryType.MOTOR_LIMITS,
-                port_index,
+                port,
                 motor_limits[0],
                 motor_limits[1],
                 motor_limits[2]
@@ -287,38 +292,38 @@ class TelemetryCollector:
 
             yield bytes(self.payload)[:TelemetryProtocol.MOTOR_LIMITS_SIZE]
 
-    def collect_motor_statuses(self):
-        for port_index, motor_status in motors_controller.read_states():
+    def collect_motor_states(self):
+        for port, motor_state in motors_controller.read_states():
             pack_into(
-                TelemetryProtocol.MOTOR_STATUS_FORMAT,
+                TelemetryProtocol.MOTOR_STATE_FORMAT,
                 self.payload,
                 0,
-                TelemetryType.MOTOR_STATUS,
-                port_index,
-                int(motor_status[0]),
-                int(motor_status[1]),
-                int(motor_status[2]),
-                int(motor_status[3])
+                TelemetryType.MOTOR_STATE,
+                port,
+                int(motor_state[0]),
+                int(motor_state[1]),
+                int(motor_state[2]),
+                int(motor_state[3])
             )
 
-            yield bytes(self.payload)[:TelemetryProtocol.MOTOR_STATUS_SIZE]
+            yield bytes(self.payload)[:TelemetryProtocol.MOTOR_STATE_SIZE]
 
-    def collect_sensor_statuses(self):
-        for port_index, sensor_type, sensor_status in sensors_controller.read_states():
+    def collect_sensor_states(self):
+        for port, sensor_type, sensor_state in sensors_controller.read_states():
             pack_into(
-                TelemetryProtocol.SENSOR_STATUS_FORMAT,
+                TelemetryProtocol.SENSOR_STATE_FORMAT,
                 self.payload,
                 0,
-                TelemetryType.SENSOR_STATUS,
-                port_index,
+                TelemetryType.SENSOR_STATE,
+                port,
                 sensor_type,
-                sensor_status[0],
-                sensor_status[1],
-                sensor_status[2],
-                sensor_status[3]
+                sensor_state[0],
+                sensor_state[1],
+                sensor_state[2],
+                sensor_state[3]
             )
 
-            yield bytes(self.payload)[:TelemetryProtocol.SENSOR_STATUS_SIZE]
+            yield bytes(self.payload)[:TelemetryProtocol.SENSOR_STATE_SIZE]
 
 command_handler = CommandHandler()
 telemetry_collector = TelemetryCollector()
@@ -333,24 +338,29 @@ async def process_app_data_command_loop():
         command_handler.process_app_data()
         await wait(500)
 
-async def broadcast_telemetry_loop():
-    bytes = telemetry_collector.collect_hub_info()
-    await app_data.write_bytes(bytes)
+async def update_sensor_states_loop():
+    while True:
+        await sensors_controller.update_states()
+        await wait(500)
 
-    for bytes in telemetry_collector.collect_motor_limits():
-        await app_data.write_bytes(bytes)
+async def broadcast_telemetry_loop():
+    data = telemetry_collector.collect_hub_info()
+    await app_data.write_bytes(data)
+
+    for data in telemetry_collector.collect_motor_limits():
+        await app_data.write_bytes(data)
 
     while True:
-        bytes = telemetry_collector.collect_hub_status()
-        await app_data.write_bytes(bytes)
+        data = telemetry_collector.collect_hub_state()
+        await app_data.write_bytes(data)
         await wait(100)
 
         for i in range(10):
-            bytes = telemetry_collector.collect_hub_imu()
-            await app_data.write_bytes(bytes)
+            data = telemetry_collector.collect_hub_imu()
+            await app_data.write_bytes(data)
 
-            for bytes in telemetry_collector.collect_motor_statuses():
-                await app_data.write_bytes(bytes)
+            for data in telemetry_collector.collect_sensor_states():
+                await app_data.write_bytes(data)
 
             await wait(100)
             gc.collect()
@@ -359,6 +369,7 @@ async def main():
     await multitask(
         process_stdin_command_loop(),
         process_app_data_command_loop(),
+        update_sensor_states_loop(),
         broadcast_telemetry_loop()
     )
 

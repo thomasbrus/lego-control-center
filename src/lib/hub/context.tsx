@@ -1,4 +1,4 @@
-import { Hub, HubId, HubPhase } from "@/lib/hub/types";
+import { Hub, HubId, HubStatus } from "@/lib/hub/types";
 import { createContext, useCallback, useReducer } from "react";
 import { TelemetryEvent } from "../telemetry/types";
 
@@ -35,7 +35,7 @@ export const HubsContext = createContext<HubsContextValue | undefined>(undefined
 const idleHub: Hub = {
   id: "untitled-hub",
   name: "Untitled Hub",
-  phase: HubPhase.Idle,
+  status: HubStatus.Idle,
 };
 
 /* ──────────────────────────
@@ -53,7 +53,7 @@ function applyTelemetryToModel(prevHub: Hub, event: TelemetryEvent): Hub {
       nextHub.type = event.hubType;
       break;
 
-    case "HubPhase":
+    case "HubState":
       nextHub.batteryPercentage = event.batteryPercentage;
       break;
 
@@ -67,9 +67,9 @@ function applyTelemetryToModel(prevHub: Hub, event: TelemetryEvent): Hub {
 
     case "MotorLimits": {
       nextHub.motors ||= new Map();
-      const prevMotor = nextHub.motors.get(event.portIndex);
+      const prevMotor = nextHub.motors.get(event.port);
 
-      nextHub.motors.set(event.portIndex, {
+      nextHub.motors.set(event.port, {
         ...prevMotor,
         limits: {
           speed: event.speed,
@@ -80,11 +80,11 @@ function applyTelemetryToModel(prevHub: Hub, event: TelemetryEvent): Hub {
       break;
     }
 
-    case "MotorStatus": {
+    case "MotorState": {
       nextHub.motors ||= new Map();
-      const prevMotor = nextHub.motors.get(event.portIndex);
+      const prevMotor = nextHub.motors.get(event.port);
 
-      nextHub.motors.set(event.portIndex, {
+      nextHub.motors.set(event.port, {
         ...prevMotor,
         angle: event.angle,
         speed: event.speed,
@@ -94,8 +94,12 @@ function applyTelemetryToModel(prevHub: Hub, event: TelemetryEvent): Hub {
       break;
     }
 
-    case "SensorStatus":
-      // intentionally unhandled for now
+    case "SensorState":
+      nextHub.sensors ||= new Map();
+      nextHub.sensors.set(event.port, {
+        type: event.sensorType,
+        values: [event.value0, event.value1, event.value2, event.value3],
+      });
       break;
   }
 
@@ -125,7 +129,7 @@ function hubsReducer(state: Map<HubId, Hub>, action: HubAction): Map<HubId, Hub>
       nextState.set(action.id, {
         id: hub.id,
         name: hub.name,
-        phase: HubPhase.Idle,
+        status: HubStatus.Idle,
       });
 
       return nextState;

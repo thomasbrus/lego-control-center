@@ -1,7 +1,7 @@
 import { Badge, Button, Card, Icon, Progress, PropertyList } from "@/components/ui";
 import * as HubCommands from "@/lib/hub/commands";
 import * as HubHooks from "@/lib/hub/hooks";
-import { Hub, HubPhase } from "@/lib/hub/types";
+import { Hub, HubStatus } from "@/lib/hub/types";
 import * as HubUtils from "@/lib/hub/utils";
 import { useModeContext } from "@/lib/mode/hooks";
 import * as SimulatedHubHooks from "@/lib/simulated-hub/hooks";
@@ -45,10 +45,10 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
           <PropertyList.Item>
             <PropertyList.Label>Status</PropertyList.Label>
             <PropertyList.Value>
-              <PhaseBadge phase={hub.phase} />
+              <StatusBadge status={hub.status} />
             </PropertyList.Value>
           </PropertyList.Item>
-          {hub.phase === HubPhase.LaunchingProgram && (
+          {hub.status === HubStatus.LaunchingProgram && (
             <PropertyList.Item>
               <PropertyList.Label>Progress</PropertyList.Label>
               <PropertyList.Value placeSelf="auto">
@@ -71,7 +71,7 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
         </PropertyList.Root>
       </Card.Body>
       <Card.Footer>
-        <Button variant="plain" onClick={handleShutdown} disabled={!HubUtils.isAtLeastPhase(hub, HubPhase.Running)}>
+        <Button variant="plain" onClick={handleShutdown} disabled={!HubUtils.isAtLeastStatus(hub, HubStatus.Running)}>
           Shutdown
         </Button>
         <Button variant="solid" colorPalette="primary" onClick={handleDisconnect} disabled={!HubUtils.isConnected(hub)}>
@@ -82,27 +82,27 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
   );
 }
 
-function PhaseBadge({ phase }: { phase: HubPhase }) {
-  switch (phase) {
-    case HubPhase.Idle:
+function StatusBadge({ status }: { status: HubStatus }) {
+  switch (status) {
+    case HubStatus.Idle:
       return <Badge colorPalette="gray">Idle</Badge>;
-    case HubPhase.Connecting:
+    case HubStatus.Connecting:
       return <Badge colorPalette="blue">Connecting...</Badge>;
-    case HubPhase.Connected:
+    case HubStatus.Connected:
       return <Badge colorPalette="green">Connected</Badge>;
-    case HubPhase.StartingNotifications:
+    case HubStatus.StartingNotifications:
       return <Badge colorPalette="yellow">Starting Notifications...</Badge>;
-    case HubPhase.RetrievingCapabilities:
+    case HubStatus.RetrievingCapabilities:
       return <Badge colorPalette="yellow">Retrieving Capabilities...</Badge>;
-    case HubPhase.StartingRepl:
+    case HubStatus.StartingRepl:
       return <Badge colorPalette="yellow">Starting REPL...</Badge>;
-    case HubPhase.LaunchingProgram:
+    case HubStatus.LaunchingProgram:
       return <Badge colorPalette="green">Launching Program...</Badge>;
-    case HubPhase.Ready:
+    case HubStatus.Ready:
       return <Badge colorPalette="blue">Ready</Badge>;
-    case HubPhase.Running:
+    case HubStatus.Running:
       return <Badge colorPalette="blue">Running</Badge>;
-    case HubPhase.Error:
+    case HubStatus.Error:
       return <Badge colorPalette="red">Error</Badge>;
     default:
       return <Badge>Unknown</Badge>;

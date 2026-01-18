@@ -1,4 +1,5 @@
 import { HubType } from "../hub/types";
+import { SensorType } from "../sensor/type";
 import { TelemetryEvent } from "./types";
 
 /**
@@ -16,10 +17,10 @@ export function parseTelemetryEvent(buffer: ArrayBuffer): TelemetryEvent {
         type: "HubInfo",
         hubType: parseHubType(view.getUint8(1)),
       };
-    case 0x11: // HUB_STATUS
+    case 0x11: // HUB_STATE
       // <BB: TelemetryType, BatteryPercentage
       return {
-        type: "HubPhase",
+        type: "HubState",
         batteryPercentage: view.getUint8(1),
       };
     case 0x12: // HUB_IMU
@@ -31,34 +32,34 @@ export function parseTelemetryEvent(buffer: ArrayBuffer): TelemetryEvent {
         heading: view.getInt16(5, true),
       };
     case 0x20: // MOTOR_LIMITS
-      // <BBhhh: TelemetryType, PortIndex, Speed, Acceleration, Torque
+      // <BBhhh: TelemetryType, Port, Speed, Acceleration, Torque
       return {
         type: "MotorLimits",
-        portIndex: view.getUint8(1),
+        port: view.getUint8(1),
         speed: view.getInt16(2, true),
         acceleration: view.getInt16(4, true),
         torque: view.getInt16(6, true),
       };
-    case 0x21: // MOTOR_STATUS
-      // <BBhhh?: TelemetryType, PortIndex, Angle, Speed, Load, IsStalled
+    case 0x21: // MOTOR_STATE
+      // <BBhhh?: TelemetryType, Port, Angle, Speed, Load, IsStalled
       return {
-        type: "MotorStatus",
-        portIndex: view.getUint8(1),
+        type: "MotorState",
+        port: view.getUint8(1),
         angle: view.getInt16(2, true),
         speed: view.getInt16(4, true),
         load: view.getInt16(6, true),
         isStalled: !!view.getUint8(8),
       };
-    case 0x30: // SENSOR_STATUS
-      // <BBBhhhh: TelemetryType, SensorType, PortIndex, Distance, Hue, Saturation, Value
+    case 0x30: // SENSOR_STATE
+      // <BBBhhhh: TelemetryType, Port, SensorType, Value0, Value1, Value2, Value3
       return {
-        type: "SensorStatus",
-        portIndex: view.getUint8(1),
-        sensorType: view.getUint8(2),
-        distance: view.getInt16(3, true),
-        hue: view.getInt16(5, true),
-        saturation: view.getInt16(7, true),
-        value: view.getInt16(9, true),
+        type: "SensorState",
+        port: view.getUint8(1),
+        sensorType: parseSensorType(view.getUint8(2)),
+        value0: view.getInt16(3, true),
+        value1: view.getInt16(5, true),
+        value2: view.getInt16(7, true),
+        value3: view.getInt16(9, true),
       };
     default:
       throw new Error("Unknown telemetry type: " + telemetryType);
@@ -75,5 +76,14 @@ function parseHubType(value: number): HubType {
       return { id: "invenhor-hub", name: "InvenHor Hub" };
     default:
       throw new Error("Unknown hub type: " + value);
+  }
+}
+
+function parseSensorType(value: number): SensorType {
+  switch (value) {
+    case 2:
+      return { id: "color-distance-sensor", name: "Color Distance Sensor" };
+    default:
+      throw new Error("Unknown sensor type: " + value);
   }
 }

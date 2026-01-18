@@ -1,4 +1,4 @@
-import { Hub, HubPhase } from "@/lib/hub/types";
+import { Hub, HubStatus } from "@/lib/hub/types";
 import * as HubUtils from "@/lib/hub/utils";
 import { TelemetryEvent } from "@/lib/telemetry/types";
 import { useState } from "react";
@@ -8,6 +8,7 @@ import { HubConnectCard } from "./hub-connect-card";
 import { IMUCard } from "./imu-card";
 import { LightCard } from "./light-card";
 import { MotorCard } from "./motor-card";
+import { SensorCard } from "./sensor-card";
 import { TelemetryCard } from "./telemetry-card";
 import { TerminalCard } from "./terminal-card";
 
@@ -36,7 +37,7 @@ export function HubDashboard({ hub }: { hub: Hub }) {
 
   return (
     <styled.main p="8" pb="16" display="grid" gridTemplateColumns="repeat(auto-fit, minmax(420px, 1fr))" gap="6" alignItems="start">
-      {hub.phase === HubPhase.Idle ? (
+      {hub.status === HubStatus.Idle ? (
         <HubConnectCard
           hub={hub}
           title={hub.name}
@@ -50,18 +51,21 @@ export function HubDashboard({ hub }: { hub: Hub }) {
         <>
           <Grid gap="6">
             <HubCard hub={hub} launchProgramProgress={launchProgramProgress} />
-            {HubUtils.isAtLeastPhase(hub, HubPhase.Ready) && <LightCard hub={hub} />}
+            {HubUtils.isAtLeastStatus(hub, HubStatus.Ready) && <LightCard hub={hub} />}
           </Grid>
-          {HubUtils.isAtLeastPhase(hub, HubPhase.Ready) && (
+          {HubUtils.isAtLeastStatus(hub, HubStatus.Ready) && (
             <Grid gap="6">
               {<IMUCard hub={hub} />}
               {Array.from(hub.motors ?? []).map(([port, motor]) => (
                 <MotorCard key={port} port={port} motor={motor} />
               ))}
+              {Array.from(hub.sensors ?? []).map(([port, sensor]) => (
+                <SensorCard key={port} port={port} sensor={sensor} />
+              ))}
             </Grid>
           )}
           <Grid gap="6">
-            {HubUtils.isAtLeastPhase(hub, HubPhase.Running) && <TelemetryCard telemetryEvents={telemetryEvents} />}
+            {HubUtils.isAtLeastStatus(hub, HubStatus.Running) && <TelemetryCard telemetryEvents={telemetryEvents} />}
             {<TerminalCard terminalOutput={terminalOutput} />}
           </Grid>
         </>

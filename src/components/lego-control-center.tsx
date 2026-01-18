@@ -1,7 +1,7 @@
 import { Button, IconButton, Tabs, Tooltip } from "@/components/ui";
 import * as HubCommands from "@/lib/hub/commands";
 import { useHubsContext } from "@/lib/hub/hooks";
-import { Hub, HubPhase } from "@/lib/hub/types";
+import { Hub, HubStatus } from "@/lib/hub/types";
 import * as HubUtils from "@/lib/hub/utils";
 import { PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
@@ -12,7 +12,7 @@ export function LegoControlCenter() {
   const [tab, setTab] = useState<string>(hubs[0]?.id);
 
   function handleAddHub() {
-    const newHub: Hub = { id: crypto.randomUUID(), name: "Untitled", phase: HubPhase.Idle };
+    const newHub: Hub = { id: crypto.randomUUID(), name: "Untitled", status: HubStatus.Idle };
     addHub(newHub);
     setTab(newHub.id);
   }
