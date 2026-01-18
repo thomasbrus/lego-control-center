@@ -28,7 +28,7 @@ export function TerminalCard({ terminalOutput }: { terminalOutput: string }) {
         {terminalLines.join().length === 0 ? (
           <EmptyState description="No output yet." />
         ) : (
-          <ScrollToBottom className={scrollAreaClasses}>
+          <ScrollToBottom className={scrollAreaClasses} initialScrollBehavior="auto">
             <styled.pre fontSize="xs" fontFamily="mono" whiteSpace="pre-wrap" wordBreak="break-all" p="2" bg="gray.2" borderRadius="l1">
               {terminalLines.map((terminalLine, i) => (
                 <React.Fragment key={i}>

@@ -2,7 +2,7 @@
 import { Progress } from "@ark-ui/react/progress";
 import type { ComponentProps } from "react";
 import { Styles } from "styled-system/css";
-import { createStyleContext, Grid } from "styled-system/jsx";
+import { createStyleContext, Flex } from "styled-system/jsx";
 import { progress } from "styled-system/recipes";
 
 const { withProvider, withContext } = createStyleContext(progress);
@@ -24,13 +24,13 @@ export type DefaultProps = RootProps & Styles & { label?: string };
 export function Default({ label, children, ...props }: DefaultProps) {
   return (
     <Root {...props}>
-      <Grid gap="4" gridTemplateColumns={label ? "auto 1fr auto" : "1fr auto"} alignItems="center">
+      <Flex gap="4" alignItems="center">
         {label && <Label>{label}</Label>}
-        <Track>
+        <Track flex="1">
           <Range />
         </Track>
-        <ValueText />
-      </Grid>
+        {children}
+      </Flex>
     </Root>
   );
 }

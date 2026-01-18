@@ -35,7 +35,7 @@ export function HubDashboard({ hub }: { hub: Hub }) {
   }
 
   return (
-    <styled.main p="8" display="grid" gridTemplateColumns="repeat(auto-fit, minmax(420px, 1fr))" gap="6" alignItems="start">
+    <styled.main p="8" pb="16" display="grid" gridTemplateColumns="repeat(auto-fit, minmax(420px, 1fr))" gap="6" alignItems="start">
       {hub.phase === HubPhase.Idle ? (
         <HubConnectCard
           hub={hub}
@@ -50,13 +50,13 @@ export function HubDashboard({ hub }: { hub: Hub }) {
         <>
           <Grid gap="6">
             <HubCard hub={hub} launchProgramProgress={launchProgramProgress} />
-            {HubUtils.isAtLeastPhase(hub, HubPhase.StartingRepl) && <LightCard hub={hub} />}
+            {HubUtils.isAtLeastPhase(hub, HubPhase.Ready) && <LightCard hub={hub} />}
           </Grid>
           {HubUtils.isAtLeastPhase(hub, HubPhase.Ready) && (
             <Grid gap="6">
               {<IMUCard hub={hub} />}
               {Array.from(hub.motors ?? []).map(([port, motor]) => (
-                <MotorCard key={port} motor={motor} />
+                <MotorCard key={port} port={port} motor={motor} />
               ))}
             </Grid>
           )}

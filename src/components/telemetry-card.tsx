@@ -25,7 +25,7 @@ export function TelemetryCard({ telemetryEvents }: { telemetryEvents: TelemetryE
         {telemetryEvents.length === 0 ? (
           <EmptyState description="No telemetry data yet." />
         ) : (
-          <ScrollToBottom className={scrollAreaClasses}>
+          <ScrollToBottom className={scrollAreaClasses} initialScrollBehavior="auto">
             <Table.Root variant="surface">
               <Table.Head>
                 <Table.Row>

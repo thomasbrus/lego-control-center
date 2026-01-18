@@ -162,7 +162,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       const telemetryEvents: TelemetryEvent[] = [
         { type: "HubInfo", hubType: { id: "technic-hub", name: "Technic Hub" } },
-        { type: "MotorLimits", portIndex: 0, speed: 100, acceleration: 200, torque: 50 },
+        { type: "MotorLimits", portIndex: 0, speed: 1000, acceleration: 200, torque: 50 },
 
         { type: "HubPhase", batteryPercentage: 78 },
 
@@ -171,17 +171,17 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
         { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 100, hue: 120, saturation: 80, value: 90 },
 
         { type: "HubIMU", pitch: 14, roll: 38, heading: 43 },
-        { type: "MotorStatus", portIndex: 0, angle: 1240, speed: 60, load: 75, isStalled: false },
+        { type: "MotorStatus", portIndex: 0, angle: 14, speed: 60, load: 75, isStalled: false },
         { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 98, hue: 121, saturation: 81, value: 91 },
 
         { type: "HubIMU", pitch: 15, roll: 42, heading: 64 },
-        { type: "MotorStatus", portIndex: 0, angle: 1250, speed: 62, load: 70, isStalled: false },
+        { type: "MotorStatus", portIndex: 0, angle: 14, speed: 30, load: 56, isStalled: false },
         { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 95, hue: 122, saturation: 82, value: 92 },
 
         { type: "HubPhase", batteryPercentage: 77 },
 
         { type: "HubIMU", pitch: 16, roll: 64, heading: 128 },
-        { type: "MotorStatus", portIndex: 0, angle: 1260, speed: 65, load: 68, isStalled: false },
+        { type: "MotorStatus", portIndex: 0, angle: 14, speed: 0, load: 0, isStalled: true },
         { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 93, hue: 123, saturation: 83, value: 93 },
       ];
 

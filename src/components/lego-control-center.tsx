@@ -41,7 +41,7 @@ export function LegoControlCenter() {
 
   return (
     <div>
-      <Tabs.Root size="lg" value={tab} onValueChange={(details) => setTab(details.value)}>
+      <Tabs.Root size="lg" gap="0" value={tab} onValueChange={(details) => setTab(details.value)}>
         <Tabs.List px="8" position="sticky" top="0" zIndex="docked" bg="white">
           {hubs.map((hub) => (
             <Tabs.Trigger key={hub.id} value={hub.id}>

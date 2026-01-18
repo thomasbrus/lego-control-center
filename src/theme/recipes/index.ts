@@ -1,3 +1,7 @@
+import { inputGroup } from "./input-group";
+import { input } from "./input";
+import { numberInput } from "./number-input";
+import { slider } from "./slider";
 import { progress } from "./progress";
 import { absoluteCenter } from "./absolute-center";
 import { alert } from "./alert";
@@ -42,6 +46,10 @@ export const recipes = {
   tabs,
   text,
   tooltip,
-  progress
+  progress,
+  slider,
+  numberInput,
+  input,
+  inputGroup
 };
 export const slotRecipes = {};

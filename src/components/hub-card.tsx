@@ -52,7 +52,9 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
             <PropertyList.Item>
               <PropertyList.Label>Progress</PropertyList.Label>
               <PropertyList.Value placeSelf="auto">
-                <Progress.Default value={launchProgramProgress} colorPalette="[success]" />
+                <Progress.Default value={launchProgramProgress} colorPalette="[success]">
+                  <Progress.ValueText />
+                </Progress.Default>
               </PropertyList.Value>
             </PropertyList.Item>
           )}
@@ -60,18 +62,20 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
             <PropertyList.Item>
               <PropertyList.Label>Battery</PropertyList.Label>
               <PropertyList.Value placeSelf="end">
-                <Progress.Default value={hub.batteryPercentage} w="32" {...batteryPercentageColorPaletteProps(hub.batteryPercentage)} />
+                <Progress.Default value={hub.batteryPercentage} w="32" {...batteryPercentageColorPaletteProps(hub.batteryPercentage)}>
+                  <Progress.ValueText />
+                </Progress.Default>
               </PropertyList.Value>
             </PropertyList.Item>
           )}
         </PropertyList.Root>
       </Card.Body>
       <Card.Footer>
-        <Button variant="surface" onClick={handleDisconnect} disabled={!HubUtils.isConnected(hub)}>
-          Disconnect
-        </Button>
-        <Button variant="solid" onClick={handleShutdown} disabled={!HubUtils.isAtLeastPhase(hub, HubPhase.Running)}>
+        <Button variant="plain" onClick={handleShutdown} disabled={!HubUtils.isAtLeastPhase(hub, HubPhase.Running)}>
           Shutdown
+        </Button>
+        <Button variant="solid" colorPalette="primary" onClick={handleDisconnect} disabled={!HubUtils.isConnected(hub)}>
+          Disconnect
         </Button>
       </Card.Footer>
     </Card.Root>

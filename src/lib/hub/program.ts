@@ -41,7 +41,7 @@ HUB_TYPES = {
 }
 
 class HubController:
-    __slots__ = ("hub", "COLORS", "MIN_VOLTAGE", "MAX_VOLTAGE")
+    __slots__ = ("COLORS", "MIN_VOLTAGE", "MAX_VOLTAGE")
 
     COLORS = [
         Color.NONE,     # 0 = NONE (off, not black)
@@ -59,28 +59,25 @@ class HubController:
     MIN_VOLTAGE = 6000
     MAX_VOLTAGE = 8300
 
-    def __init__(self, hub):
-        self.hub = hub
-
     def shutdown(self):
-        self.hub.system.shutdown()
+        hub.system.shutdown()
 
     def set_light(self, index):
-        self.hub.light.on(self.COLORS[index])
+        hub.light.on(self.COLORS[index])
 
     def name(self):
-        return self.hub.system.info().name
+        return hub.system.info().name
 
     def hub_type(self):
-        hub_str = str(self.hub)
+        hub_str = str(hub)
 
         if hub_str is '<PrimeHub>' and "inventor" in self.name().lower():
-                hub_str = '<InvenHorHub>'
+                hub_str = '<InventorHub>'
 
         return HUB_TYPES[hub_str]
 
     def battery_percentage(self):
-        voltage = self.hub.battery.voltage()
+        voltage = hub.battery.voltage()
         value = int((voltage - self.MIN_VOLTAGE) * 100 / (self.MAX_VOLTAGE - self.MIN_VOLTAGE))
         return max(0, min(100, value))
 
@@ -129,7 +126,7 @@ class SensorsController:
 
 motors_controller = MotorsController()
 sensors_controller = SensorsController()
-hub_controller = HubController(hub)
+hub_controller = HubController()
 
 class CommandType:
     SHUTDOWN_HUB = const(0x10)
@@ -354,9 +351,6 @@ async def broadcast_telemetry_loop():
 
             for bytes in telemetry_collector.collect_motor_statuses():
                 await app_data.write_bytes(bytes)
-
-            # for bytes in telemetry_collector.collect_sensor_statuses():
-            #     await app_data.write_bytes(bytes)
 
             await wait(100)
             gc.collect()

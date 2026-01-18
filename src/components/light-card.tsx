@@ -77,7 +77,7 @@ export function LightCard({ hub }: { hub: Hub }) {
         </Card.Title>
       </Card.Header>
       <Card.Body>
-        <Box px="6" py="8" pb="12" borderRadius="l2" bg="gray.2">
+        <Box px="6" py="8" pb="12" borderRadius="l2" borderWidth="1px" borderColor="border">
           <Flex justifyContent="space-around" columnGap="4" rowGap="8" alignItems="center" flexWrap="wrap" maxW="sm" mx="auto">
             <styled.div w="full">
               <Select.Default
@@ -119,10 +119,10 @@ export function LightCard({ hub }: { hub: Hub }) {
         </Box>
       </Card.Body>
       <Card.Footer>
-        <Button disabled={!HubUtils.isRunning(hub)} variant="outline" onClick={handleTurnOff}>
-          Turn off
+        <Button disabled={!HubUtils.isRunning(hub)} onClick={handleTurnOff} variant="plain">
+          Turn Off
         </Button>
-        <Button disabled={!HubUtils.isRunning(hub)} onClick={handleApply}>
+        <Button disabled={!HubUtils.isRunning(hub)} onClick={handleApply} colorPalette="primary">
           Apply
         </Button>
       </Card.Footer>

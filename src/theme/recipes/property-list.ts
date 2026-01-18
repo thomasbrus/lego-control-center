@@ -6,7 +6,7 @@ export const propertyList = defineSlotRecipe({
   base: {
     root: {
       display: "grid",
-      gap: "3",
+      gap: "4",
     },
     item: {
       display: "grid",
