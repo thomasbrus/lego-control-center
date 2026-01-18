@@ -1,10 +1,12 @@
 import * as DeviceUtils from "@/lib/device/utils";
 import * as HubUtils from "@/lib/hub/utils";
 import { useCallback } from "react";
+import * as HubCommands from "../hub/commands";
 import * as HubHooks from "../hub/hooks";
 import { useHubsContext } from "../hub/hooks";
 import { programMain1, programMain2 } from "../hub/program";
 import { Hub, HubPhase } from "../hub/types";
+import { CommandType } from "../pybricks/protocol";
 import { TelemetryEvent } from "../telemetry/types";
 import { delay } from "../utils";
 
@@ -29,8 +31,25 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       await delay(300);
 
+      const writeValueWithResponse = async (value: ArrayBuffer) => {
+        const bytes = new Uint8Array(value);
+        if (bytes[0] === CommandType.WriteStdin && bytes[1] === HubCommands.CommandType.SHUTDOWN_HUB) {
+          onDisconnectRefs.get(hub.id)?.();
+          await stopNotifications(hub);
+          return disconnectHub(hub.id);
+        }
+      };
+
+      const getCharacteristic = async (_characteristic: BluetoothCharacteristicUUID) => {
+        return { writeValueWithResponse } as BluetoothRemoteGATTCharacteristic;
+      };
+
+      const getPrimaryService = async (_service: BluetoothServiceUUID) => {
+        return { getCharacteristic } as BluetoothRemoteGATTService;
+      };
+
       const connectedDevice = {
-        gatt: { connected: true, disconnect: () => disconnectHub(hub.id) },
+        gatt: { connected: true, getPrimaryService, disconnect: () => disconnectHub(hub.id) },
       } as BluetoothDevice;
 
       return replaceHub(hub.id, {
@@ -145,7 +164,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
         { type: "HubInfo", hubType: { id: "technic-hub", name: "Technic Hub" } },
         { type: "MotorLimits", portIndex: 0, speed: 100, acceleration: 200, torque: 50 },
 
-        { type: "HubPhase", batteryPercentage: 69 },
+        { type: "HubPhase", batteryPercentage: 78 },
 
         { type: "HubIMU", pitch: 13, roll: 37, heading: 42 },
         { type: "MotorStatus", portIndex: 0, angle: 1234, speed: 56, load: 78, isStalled: false },
@@ -159,7 +178,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
         { type: "MotorStatus", portIndex: 0, angle: 1250, speed: 62, load: 70, isStalled: false },
         { type: "SensorStatus", portIndex: 0, sensorType: 1, distance: 95, hue: 122, saturation: 82, value: 92 },
 
-        { type: "HubPhase", batteryPercentage: 68 },
+        { type: "HubPhase", batteryPercentage: 77 },
 
         { type: "HubIMU", pitch: 16, roll: 64, heading: 128 },
         { type: "MotorStatus", portIndex: 0, angle: 1260, speed: 65, load: 68, isStalled: false },

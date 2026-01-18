@@ -1,4 +1,4 @@
-import { MotorModel } from "../motor/types";
+import { Motor } from "../motor/types";
 
 export type HubId = BluetoothDevice["id"];
 
@@ -10,7 +10,7 @@ export interface Hub {
   capabilities?: HubCapabilities;
   type?: HubType;
   batteryPercentage?: number;
-  motors?: Map<number, MotorModel>;
+  motors?: Map<number, Motor>;
   imu?: HubIMU;
 }
 

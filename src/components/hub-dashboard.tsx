@@ -1,4 +1,5 @@
 import { Hub, HubPhase } from "@/lib/hub/types";
+import * as HubUtils from "@/lib/hub/utils";
 import { TelemetryEvent } from "@/lib/telemetry/types";
 import { useState } from "react";
 import { Grid, styled } from "styled-system/jsx";
@@ -6,6 +7,7 @@ import { HubCard } from "./hub-card";
 import { HubConnectCard } from "./hub-connect-card";
 import { IMUCard } from "./imu-card";
 import { LightCard } from "./light-card";
+import { MotorCard } from "./motor-card";
 import { TelemetryCard } from "./telemetry-card";
 import { TerminalCard } from "./terminal-card";
 
@@ -48,13 +50,19 @@ export function HubDashboard({ hub }: { hub: Hub }) {
         <>
           <Grid gap="6">
             <HubCard hub={hub} launchProgramProgress={launchProgramProgress} />
-            <IMUCard hub={hub} />
-
-            <LightCard hub={hub} />
+            {HubUtils.isAtLeastPhase(hub, HubPhase.StartingRepl) && <LightCard hub={hub} />}
           </Grid>
+          {HubUtils.isAtLeastPhase(hub, HubPhase.Ready) && (
+            <Grid gap="6">
+              {<IMUCard hub={hub} />}
+              {Array.from(hub.motors ?? []).map(([port, motor]) => (
+                <MotorCard key={port} motor={motor} />
+              ))}
+            </Grid>
+          )}
           <Grid gap="6">
-            <TerminalCard terminalOutput={terminalOutput} />
-            <TelemetryCard telemetryEvents={telemetryEvents} />
+            {HubUtils.isAtLeastPhase(hub, HubPhase.Running) && <TelemetryCard telemetryEvents={telemetryEvents} />}
+            {<TerminalCard terminalOutput={terminalOutput} />}
           </Grid>
         </>
       )}

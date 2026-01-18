@@ -100,7 +100,7 @@ export function LightCard({ hub }: { hub: Hub }) {
             </IconButton>
             <styled.span
               {...css.raw({
-                ...getColorPaletteProps(String(light)),
+                ...lightColorPaletteProps(light),
                 w: "8",
                 h: "8",
                 bg: "colorPalette.6",
@@ -133,32 +133,24 @@ export function LightCard({ hub }: { hub: Hub }) {
 function SelectLabel({ value, label }: { value: string; label: string }) {
   return (
     <HStack>
-      <styled.span {...css.raw({ ...getColorPaletteProps(value), w: "2", h: "2", bg: "colorPalette.8", borderRadius: "full" })} /> {label}
+      <styled.span {...css.raw({ ...lightColorPaletteProps(Number(value)), w: "2", h: "2", bg: "colorPalette.8", borderRadius: "full" })} />{" "}
+      {label}
     </HStack>
   );
 }
 
-function getColorPaletteProps(value: string): SystemStyleObject {
-  switch (value) {
-    case "1":
-      return css.raw({ colorPalette: "gray" });
-    case "2":
-      return css.raw({ colorPalette: "red" });
-    case "3":
-      return css.raw({ colorPalette: "orange" });
-    case "4":
-      return css.raw({ colorPalette: "yellow" });
-    case "5":
-      return css.raw({ colorPalette: "green" });
-    case "6":
-      return css.raw({ colorPalette: "cyan" });
-    case "7":
-      return css.raw({ colorPalette: "blue" });
-    case "8":
-      return css.raw({ colorPalette: "violet" });
-    case "9":
-      return css.raw({ colorPalette: "purple" });
-    default:
-      throw new Error("Unknown light color value: " + value);
-  }
+function lightColorPaletteProps(value: number): SystemStyleObject {
+  const arr = [
+    css.raw({ colorPalette: "gray" }),
+    css.raw({ colorPalette: "red" }),
+    css.raw({ colorPalette: "orange" }),
+    css.raw({ colorPalette: "yellow" }),
+    css.raw({ colorPalette: "green" }),
+    css.raw({ colorPalette: "cyan" }),
+    css.raw({ colorPalette: "blue" }),
+    css.raw({ colorPalette: "violet" }),
+    css.raw({ colorPalette: "purple" }),
+  ];
+
+  return arr[value - 1] || arr[0];
 }

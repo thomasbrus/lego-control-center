@@ -6,6 +6,7 @@ import * as HubUtils from "@/lib/hub/utils";
 import { useModeContext } from "@/lib/mode/hooks";
 import * as SimulatedHubHooks from "@/lib/simulated-hub/hooks";
 import { BluetoothConnectedIcon } from "lucide-react";
+import { css } from "styled-system/css";
 import { styled } from "styled-system/jsx";
 
 export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgramProgress: number }) {
@@ -28,7 +29,7 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
         </Icon>
         <Card.Title>{hub.name}</Card.Title>
         {hub.type !== undefined && (
-          <styled.div ml="auto" p="4" my="-4" mr="-4" borderRadius="l2">
+          <styled.div ml="auto" p="4" my="-7" mr="-4">
             <styled.img src={`/images/hubs/${hub.type.id}.png`} alt={hub.type.name} w="12" mixBlendMode="luminosity" />
           </styled.div>
         )}
@@ -51,7 +52,7 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
             <PropertyList.Item>
               <PropertyList.Label>Progress</PropertyList.Label>
               <PropertyList.Value placeSelf="auto">
-                <Progress.Default value={launchProgramProgress} />
+                <Progress.Default value={launchProgramProgress} colorPalette="[success]" />
               </PropertyList.Value>
             </PropertyList.Item>
           )}
@@ -59,7 +60,7 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
             <PropertyList.Item>
               <PropertyList.Label>Battery</PropertyList.Label>
               <PropertyList.Value placeSelf="end">
-                <Progress.Default value={hub.batteryPercentage} w="32" colorPalette="green" />
+                <Progress.Default value={hub.batteryPercentage} w="32" {...batteryPercentageColorPaletteProps(hub.batteryPercentage)} />
               </PropertyList.Value>
             </PropertyList.Item>
           )}
@@ -101,5 +102,17 @@ function PhaseBadge({ phase }: { phase: HubPhase }) {
       return <Badge colorPalette="red">Error</Badge>;
     default:
       return <Badge>Unknown</Badge>;
+  }
+}
+
+function batteryPercentageColorPaletteProps(batteryPercentage: number) {
+  if (batteryPercentage > 75) {
+    return css.raw({ colorPalette: "success" });
+  } else if (batteryPercentage > 50) {
+    return css.raw({ colorPalette: "info" });
+  } else if (batteryPercentage > 25) {
+    return css.raw({ colorPalette: "warning" });
+  } else {
+    return css.raw({ colorPalette: "danger" });
   }
 }

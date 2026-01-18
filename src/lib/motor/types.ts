@@ -1,4 +1,4 @@
-export interface MotorModel {
+export interface Motor {
   angle?: number;
   speed?: number;
   load?: number;

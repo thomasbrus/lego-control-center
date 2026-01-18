@@ -16,10 +16,10 @@ export const card = defineSlotRecipe({
       flexDirection: "column",
       gap: "1",
       px: "6",
-      py: "4",
+      py: "5",
       pb: {
         base: "2",
-        "&:only-child": "4",
+        "&:only-child": "5",
       },
     },
     body: {
@@ -34,7 +34,7 @@ export const card = defineSlotRecipe({
       bg: "gray.2",
       gap: "3",
       px: "6",
-      py: "4",
+      py: "5",
     },
     title: {
       textStyle: "lg",
