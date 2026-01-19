@@ -66,7 +66,7 @@ class HubController:
         hub.light.on(self.COLORS[index])
 
     def name(self):
-        return hub.system.info().name
+        return hub.system.info()['name']
 
     def hub_type(self):
         hub_str = str(hub)
