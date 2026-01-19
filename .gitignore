@@ -14,3 +14,6 @@ todos.json
 ## Panda
 styled-system
 styled-system-studio
+
+# Local Netlify folder
+.netlify
