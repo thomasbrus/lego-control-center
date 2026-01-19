@@ -71,9 +71,9 @@ function parseHubType(value: number): HubType {
     case 2:
       return { id: "technic-hub", name: "Technic Hub" };
     case 3:
-      return { id: "invenhor-hub", name: "InvenHor Hub" };
+      return { id: "prime-hub", name: "Prime Hub" };
     case 4:
-      return { id: "invenhor-hub", name: "InvenHor Hub" };
+      return { id: "inventor-hub", name: "Inventor Hub" };
     default:
       throw new Error("Unknown hub type: " + value);
   }
