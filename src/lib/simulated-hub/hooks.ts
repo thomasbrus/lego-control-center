@@ -62,6 +62,20 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
     [replaceHub, disconnectHub],
   );
 
+  const retrieveDeviceInfo = useCallback(
+    async (hub: Hub) => {
+      const retrievingDeviceInfoHub = replaceHub(hub.id, { ...hub, status: HubStatus.RetrievingDeviceInfo });
+
+      // Change this to simulate unsupported device
+      if (Math.random() > 1) throw new Error("This device is not supported");
+
+      await delay(150);
+
+      return replaceHub(hub.id, { ...retrievingDeviceInfoHub, status: HubStatus.Connected });
+    },
+    [replaceHub],
+  );
+
   const startNotifications = useCallback(
     async (hub: Hub, options: HubHooks.StartNotificationsOptions) => {
       DeviceUtils.assertConnected(hub.device);
@@ -104,7 +118,10 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
       });
 
       await delay(500);
-      const capabilities = { maxWriteSize: 148 };
+      const capabilities = { maxWriteSize: 148, flags: 11, maxUserProgramSize: 16164 };
+
+      // Change this to simulate repl not supported
+      if (Math.random() > 1) throw new Error("REPL not supported on this hub");
 
       return replaceHub(hub.id, {
         ...retrievingCapabilitiesHub,
@@ -211,6 +228,7 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
   return {
     connect,
+    retrieveDeviceInfo,
     startNotifications,
     retrieveCapabilities,
     stopNotifications,

@@ -32,7 +32,7 @@ export const HubsContext = createContext<HubsContextValue | undefined>(undefined
    Initial hub
 ────────────────────────── */
 
-const idleHub: Hub = {
+export const idleHub: Hub = {
   id: "untitled-hub",
   name: "Untitled Hub",
   status: HubStatus.Idle,

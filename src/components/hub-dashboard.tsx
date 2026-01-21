@@ -66,7 +66,7 @@ export function HubDashboard({ hub }: { hub: Hub }) {
           )}
           <Grid gap="6">
             {HubUtils.isAtLeastStatus(hub, HubStatus.Running) && <TelemetryCard telemetryEvents={telemetryEvents} />}
-            {<TerminalCard terminalOutput={terminalOutput} />}
+            {HubUtils.isAtLeastStatus(hub, HubStatus.Connected) && <TerminalCard terminalOutput={terminalOutput} />}
           </Grid>
         </>
       )}
