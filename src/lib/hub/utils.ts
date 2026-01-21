@@ -1,8 +1,14 @@
+import { HubCapabilityFlag } from "../pybricks/protocol";
 import { assert } from "../utils";
 import { Hub, HubCapabilities, HubStatus } from "./types";
 
 export function assertCapabilities(hub: Hub): asserts hub is Hub & { capabilities: HubCapabilities } {
   assert(!!hub.capabilities, "Hub capabilities have not been retrieved");
+}
+
+export function assertHasRepl(hub: Hub) {
+  assertCapabilities(hub);
+  assert(Boolean(hub.capabilities.flags & HubCapabilityFlag.HasRepl), "Hub does not support REPL");
 }
 
 export function isAtLeastStatus(hub: Hub, minStatus: HubStatus): boolean {

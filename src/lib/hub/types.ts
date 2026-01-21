@@ -7,6 +7,7 @@ export interface Hub {
   id: HubId;
   name: string;
   status: HubStatus;
+  error?: Error;
   device?: BluetoothDevice;
   capabilities?: HubCapabilities;
   type?: HubType;
@@ -18,19 +19,22 @@ export interface Hub {
 
 export enum HubStatus {
   Idle,
+  Error,
   Connecting,
   Connected,
+  RetrievingDeviceInfo,
   StartingNotifications,
   RetrievingCapabilities,
   StartingRepl,
   LaunchingProgram,
   Ready,
   Running,
-  Error,
 }
 
 export interface HubCapabilities {
   maxWriteSize: number;
+  flags: number;
+  maxUserProgramSize: number;
 }
 
 export interface HubType {

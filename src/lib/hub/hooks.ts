@@ -2,6 +2,7 @@ import * as DeviceUtls from "@/lib/device/utils";
 import * as HubCommands from "@/lib/hub/commands";
 import * as HubUtils from "@/lib/hub/utils";
 import { useCallback, useContext, useRef } from "react";
+import * as DeviceCommands from "../device/commands";
 import * as NotificationParsing from "../notification/parsing";
 import * as PybricksCommands from "../pybricks/commands";
 import { requestDeviceOptions } from "../pybricks/constants";
@@ -40,6 +41,18 @@ export function useHub() {
     },
     [replaceHub],
   );
+
+  const retrieveDeviceInfo = useCallback(async (hub: Hub) => {
+    DeviceUtls.assertConnected(hub.device);
+
+    const characteristic = await DeviceCommands.getPnPIdCharacteristic(hub.device);
+    const value = await characteristic.readValue();
+    const pnpId = DeviceUtls.decodePnpId(value);
+
+    DeviceUtls.assertSupported(pnpId);
+
+    return hub;
+  }, []);
 
   const startNotifications = useCallback(async (hub: Hub, options: StartNotificationsOptions) => {
     DeviceUtls.assertConnected(hub.device);
@@ -102,9 +115,14 @@ export function useHub() {
 
       const value = await characteristic.readValue();
       const maxWriteSize = value.getUint16(0, true);
-      const capabilities: HubCapabilities = { maxWriteSize };
+      const flags = value.getUint32(2, true);
+      const maxUserProgramSize = value.getUint32(6, true);
+      const capabilities: HubCapabilities = { maxWriteSize, flags, maxUserProgramSize };
+      const hubWithCapabilities = { ...retrievingCapabilitiesHub, status: HubStatus.Ready, capabilities };
 
-      return replaceHub(hub.id, { ...retrievingCapabilitiesHub, status: HubStatus.Ready, capabilities });
+      HubUtils.assertHasRepl(hubWithCapabilities);
+
+      return replaceHub(hub.id, hubWithCapabilities);
     },
     [replaceHub],
   );
@@ -123,7 +141,7 @@ export function useHub() {
     async (hub: Hub, options: { onProgress: (progress: number) => void }) => {
       DeviceUtls.assertConnected(hub.device);
 
-      const launcningProgramHub = replaceHub(hub.id, { ...hub, status: HubStatus.LaunchingProgram });
+      const launchingProgramHub = replaceHub(hub.id, { ...hub, status: HubStatus.LaunchingProgram });
 
       const programs = [programMain1, programMain2];
 
@@ -137,7 +155,7 @@ export function useHub() {
         await HubCommands.exitPasteMode(hub);
       }
 
-      return replaceHub(hub.id, { ...launcningProgramHub, status: HubStatus.Running });
+      return replaceHub(hub.id, { ...launchingProgramHub, status: HubStatus.Running });
     },
     [replaceHub],
   );
@@ -155,6 +173,7 @@ export function useHub() {
 
   return {
     connect,
+    retrieveDeviceInfo,
     startNotifications,
     retrieveCapabilities,
     stopNotifications,

@@ -1,5 +1,6 @@
 import { Badge, Button, Card, Icon, Progress, PropertyList } from "@/components/ui";
 import * as HubCommands from "@/lib/hub/commands";
+import { idleHub } from "@/lib/hub/context";
 import * as HubHooks from "@/lib/hub/hooks";
 import { Hub, HubStatus } from "@/lib/hub/types";
 import * as HubUtils from "@/lib/hub/utils";
@@ -12,6 +13,7 @@ import { styled } from "styled-system/jsx";
 export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgramProgress: number }) {
   const { simulated } = useModeContext();
   const { disconnect } = simulated ? SimulatedHubHooks.useHub() : HubHooks.useHub();
+  const { replaceHub } = HubHooks.useHubsContext();
 
   function handleShutdown() {
     HubCommands.shutdownHub(hub);
@@ -38,12 +40,20 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
         <HubDetailsSection hub={hub} launchProgramProgress={launchProgramProgress} />
       </Card.Body>
       <Card.Footer>
-        <Button variant="plain" onClick={handleShutdown} disabled={!HubUtils.isAtLeastStatus(hub, HubStatus.Running)}>
-          Shutdown
-        </Button>
-        <Button variant="solid" colorPalette="primary" onClick={handleDisconnect} disabled={!HubUtils.isConnected(hub)}>
-          Disconnect
-        </Button>
+        {hub.error ? (
+          <Button variant="plain" onClick={() => replaceHub(hub.id, idleHub)}>
+            Back
+          </Button>
+        ) : (
+          <>
+            <Button variant="plain" onClick={handleShutdown} disabled={!HubUtils.isAtLeastStatus(hub, HubStatus.Running)}>
+              Shutdown
+            </Button>
+            <Button variant="solid" colorPalette="primary" onClick={handleDisconnect} disabled={!HubUtils.isConnected(hub)}>
+              Disconnect
+            </Button>
+          </>
+        )}
       </Card.Footer>
     </Card.Root>
   );
@@ -64,6 +74,12 @@ function HubDetailsSection({ hub, launchProgramProgress }: { hub: Hub; launchPro
           <StatusBadge status={hub.status} />
         </PropertyList.Value>
       </PropertyList.Item>
+      {hub.error && (
+        <PropertyList.Item>
+          <PropertyList.Label>Reason</PropertyList.Label>
+          <PropertyList.Value>{hub.error.message}</PropertyList.Value>
+        </PropertyList.Item>
+      )}
       {hub.status === HubStatus.LaunchingProgram && (
         <PropertyList.Item>
           <PropertyList.Label>Progress</PropertyList.Label>
@@ -96,6 +112,8 @@ function StatusBadge({ status }: { status: HubStatus }) {
       return <Badge colorPalette="blue">Connecting...</Badge>;
     case HubStatus.Connected:
       return <Badge colorPalette="green">Connected</Badge>;
+    case HubStatus.RetrievingDeviceInfo:
+      return <Badge colorPalette="yellow">Retrieving Device Info...</Badge>;
     case HubStatus.StartingNotifications:
       return <Badge colorPalette="yellow">Starting Notifications...</Badge>;
     case HubStatus.RetrievingCapabilities:
