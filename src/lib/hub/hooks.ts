@@ -49,10 +49,9 @@ export function useHub() {
     const characteristic = await DeviceCommands.getPnPIdCharacteristic(hub.device);
     const value = await characteristic.readValue();
     const pnpId = DeviceUtls.decodePnpId(value);
+    const type = HubUtils.getHubTypeFromPnpId(pnpId);
 
-    DeviceUtls.assertSupported(pnpId);
-
-    return replaceHub(hub.id, { ...retrievingDeviceInfoHub, status: HubStatus.Connected });
+    return replaceHub(hub.id, { ...retrievingDeviceInfoHub, status: HubStatus.Connected, type });
   }, []);
 
   const startNotifications = useCallback(async (hub: Hub, options: StartNotificationsOptions) => {

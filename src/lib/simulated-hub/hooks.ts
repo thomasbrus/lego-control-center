@@ -69,9 +69,11 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
       // Change this to simulate unsupported device
       if (Math.random() > 1) throw new Error("This device is not supported");
 
+      const type = { id: "technic-hub", name: "Technic Hub" } as const;
+
       await delay(150);
 
-      return replaceHub(hub.id, { ...retrievingDeviceInfoHub, status: HubStatus.Connected });
+      return replaceHub(hub.id, { ...retrievingDeviceInfoHub, status: HubStatus.Connected, type });
     },
     [replaceHub],
   );
@@ -181,7 +183,6 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
       const sensorType: SensorType = { id: "color-distance-sensor", name: "Color Distance Sensor" };
 
       const telemetryEvents: TelemetryEvent[] = [
-        { type: "HubInfo", hubType: { id: "technic-hub", name: "Technic Hub" } },
         { type: "MotorLimits", port: 0, speed: 1000, acceleration: 200, torque: 50 },
 
         { type: "HubState", batteryPercentage: 78 },

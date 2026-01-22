@@ -1,4 +1,3 @@
-import { HubType } from "../hub/types";
 import { SensorType } from "../sensor/type";
 import { TelemetryEvent } from "./types";
 
@@ -11,12 +10,6 @@ export function parseTelemetryEvent(buffer: ArrayBuffer): TelemetryEvent {
   const telemetryType = view.getUint8(0);
 
   switch (telemetryType) {
-    case 0x10: // HUB_INFO
-      // <BB: TelemetryType, HubType
-      return {
-        type: "HubInfo",
-        hubType: parseHubType(view.getUint8(1)),
-      };
     case 0x11: // HUB_STATE
       // <BB: TelemetryType, BatteryPercentage
       return {
@@ -63,19 +56,6 @@ export function parseTelemetryEvent(buffer: ArrayBuffer): TelemetryEvent {
       };
     default:
       throw new Error("Unknown telemetry type: " + telemetryType);
-  }
-}
-
-function parseHubType(value: number): HubType {
-  switch (value) {
-    case 2:
-      return { id: "technic-hub", name: "Technic Hub" };
-    case 3:
-      return { id: "prime-hub", name: "Prime Hub" };
-    case 4:
-      return { id: "inventor-hub", name: "Inventor Hub" };
-    default:
-      throw new Error("Unknown hub type: " + value);
   }
 }
 

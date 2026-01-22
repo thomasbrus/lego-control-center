@@ -9,8 +9,8 @@ export interface Hub {
   status: HubStatus;
   error?: Error;
   device?: BluetoothDevice;
-  capabilities?: HubCapabilities;
   type?: HubType;
+  capabilities?: HubCapabilities;
   batteryPercentage?: number;
   motors?: Map<number, Motor>;
   sensors?: Map<number, Sensor>;
@@ -37,10 +37,17 @@ export interface HubCapabilities {
   maxUserProgramSize: number;
 }
 
-export interface HubType {
-  id: string;
-  name: string;
+interface TechnicHubType {
+  id: "technic-hub";
+  name: "Technic Hub";
 }
+
+interface PrimeHubType {
+  id: "prime-hub";
+  name: "Prime Hub";
+}
+
+export type HubType = TechnicHubType | PrimeHubType;
 
 export interface HubIMU {
   pitch: number;

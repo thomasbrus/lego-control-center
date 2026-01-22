@@ -26,13 +26,11 @@ export async function getPybricksControlCharacteristic(device: BluetoothDevice) 
 }
 
 export function createWriteStdinCommands(message: string, maxWriteSize: number) {
-  // See https://github.com/pybricks/pybricks-code/blob/a4aade5a29945f55a12608b43e3e62e9e333fc03/src/terminal/sagas.ts#L133-L134
-  const maxPayloadSize = Math.min(maxWriteSize, 20);
   const data = encodeMessage(message);
   const commands: Uint8Array<ArrayBuffer>[] = [];
 
-  for (let offset = 0; offset < data.length; offset += maxPayloadSize) {
-    const chunk = data.slice(offset, offset + maxPayloadSize);
+  for (let offset = 0; offset < data.length; offset += maxWriteSize) {
+    const chunk = data.slice(offset, offset + maxWriteSize);
     const command = createWriteStdinCommand(chunk.buffer);
     commands.push(command);
   }

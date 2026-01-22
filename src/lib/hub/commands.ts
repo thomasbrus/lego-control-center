@@ -116,7 +116,8 @@ export function waitForStdout(hub: Hub, message: string) {
 export async function writeStdinWithResponse(hub: Hub, message: string, options: { onProgress?: (progress: number) => void } = {}) {
   DeviceUtls.assertConnected(hub.device);
   HubUtils.assertCapabilities(hub);
-  const commands = PybricksCommands.createWriteStdinCommands(message, hub.capabilities.maxWriteSize);
+
+  const commands = PybricksCommands.createWriteStdinCommands(message, getMaxWriteSize(hub) - 1);
   return await PybricksCommands.writeCommandsWithResponse(hub.device, commands, options);
 }
 
@@ -142,4 +143,17 @@ export async function enterPasteMode(hub: Hub) {
 
 export async function exitPasteMode(hub: Hub) {
   await writeStdinWithResponse(hub, "\x04");
+}
+
+function getMaxWriteSize(hub: Hub): number {
+  switch (hub.type?.id) {
+    case "technic-hub":
+      // See https://github.com/pybricks/pybricks-micropython/blob/162b97ca28ee26b2b39c5b38bc6cd986255e265e/lib/pbio/platform/technic_hub/pbsysconfig.h#L19
+      return 20;
+    case "prime-hub":
+      // See https://github.com/pybricks/pybricks-micropython/blob/162b97ca28ee26b2b39c5b38bc6cd986255e265e/lib/pbio/platform/prime_hub/pbsysconfig.h#L21
+      return 64;
+    default:
+      throw new Error("Unknown hub type for determining max write size");
+  }
 }
