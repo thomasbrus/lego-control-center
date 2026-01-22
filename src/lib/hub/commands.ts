@@ -86,18 +86,22 @@ export async function disconnect(hub: Hub) {
 export async function startRepl(hub: Hub) {
   DeviceUtls.assertConnected(hub.device);
   await PybricksCommands.startReplUserProgram(hub.device);
-  await waitForReplReady(hub);
 }
 
-function waitForReplReady(hub: Hub) {
+export function waitForStdout(hub: Hub, message: string) {
   return new Promise<void>((resolve) => {
     DeviceUtls.assertConnected(hub.device);
+    let terminalOutput = "";
 
     const listener = (event: Event) => {
       const target = event.target as BluetoothRemoteGATTCharacteristic;
       const notification = target.value && NotificationParsing.parseNotification(target.value, new Date());
 
-      if (notification?.eventType === EventType.WriteStdout && notification.message.endsWith(">>> ")) {
+      if (notification?.eventType === EventType.WriteStdout) {
+        terminalOutput += notification.message;
+      }
+
+      if (terminalOutput.includes(message)) {
         target.removeEventListener("characteristicvaluechanged", listener);
         resolve();
       }

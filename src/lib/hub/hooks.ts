@@ -131,6 +131,7 @@ export function useHub() {
     async (hub: Hub) => {
       const startingReplHub = replaceHub(hub.id, { ...hub, status: HubStatus.StartingRepl });
       await HubCommands.startRepl(hub);
+      await HubCommands.waitForStdout(hub, ">>> ");
 
       return replaceHub(hub.id, { ...startingReplHub, status: HubStatus.Ready });
     },
