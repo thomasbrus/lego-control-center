@@ -17,20 +17,19 @@ yarn dev
 ```
 
 ### Windows-Specific Setup Guide
-
-### Windows-Specific Setup Guide
+<details><summary>Detailed instructions</summary>
 
 This describes how to set up a development environment for LEGO Control Center on Windows.
 
 #### Prerequisites
 
-**Note:** Users are responsible for installing and maintaining all prerequisite software. 
-Download only from official sources. 
-This project and its maintainers are not responsible for issues arising from third-party software installations.
+**Note:** Users are responsible for installing and maintaining all prerequisite software.
 
-Before you begin, you'll need to install the following software:
+- Download only from official sources. 
+- This project and its maintainers are not responsible for issues arising from third-party software installations.
+- Before you begin, you'll need to install the following software:
 
-** 1. Node.js**
+**1. Node.js**
 Download and install Node.js from the official website:
 - Visit: https://nodejs.org/
 - Download the **LTS (Long Term Support)** version
@@ -44,7 +43,7 @@ node --version
 npm --version
 ```
 
-** 2. Yarn Package Manager**
+**2. Yarn Package Manager**
 After installing Node.js, install Yarn globally:
 ```bash
 npm install -g yarn
@@ -55,7 +54,7 @@ Verify installation:
 yarn --version
 ```
 
-** 3. Git**
+**3. Git**
 Download and install Git for Windows:
 - Visit: https://git-scm.com/download/win
 - Run the installer with default settings
@@ -91,7 +90,7 @@ yarn dev
 
 The application will start and display a local URL (typically `http://localhost:5173`). 
 Open this URL in your browser to access the application.
-
+</details>
 
 ## Requirements:
 
