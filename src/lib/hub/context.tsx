@@ -49,10 +49,6 @@ function applyTelemetryToModel(prevHub: Hub, event: TelemetryEvent): Hub {
   };
 
   switch (event.type) {
-    case "HubInfo":
-      nextHub.type = event.hubType;
-      break;
-
     case "HubState":
       nextHub.batteryPercentage = event.batteryPercentage;
       break;

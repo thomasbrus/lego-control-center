@@ -34,12 +34,6 @@ def discover_device_on_port(port, *device_classes):
 def discover_devices(*device_classes):
     return [discover_device_on_port(p, *device_classes) for p in PORTS]
 
-HUB_TYPES = {
-    '<TechnicHub>': 2,
-    '<InventorHub>': 3,
-    '<PrimeHub>': 4,
-}
-
 class HubController:
     __slots__ = ("COLORS", "MIN_VOLTAGE", "MAX_VOLTAGE")
 
@@ -67,14 +61,6 @@ class HubController:
 
     def name(self):
         return hub.system.info()['name']
-
-    def hub_type(self):
-        hub_str = str(hub)
-
-        if hub_str is '<PrimeHub>' and "inventor" in self.name().lower():
-                hub_str = '<InventorHub>'
-
-        return HUB_TYPES[hub_str]
 
     def battery_percentage(self):
         voltage = hub.battery.voltage()
@@ -199,7 +185,6 @@ class CommandHandler:
 
 export const programMain2 = `
 class TelemetryType:
-    HUB_INFO = const(0x10)
     HUB_STATE = const(0x11)
     HUB_IMU = const(0x12)
     MOTOR_LIMITS = const(0x20)
@@ -208,10 +193,6 @@ class TelemetryType:
 
 class TelemetryProtocol:
     MAX_SIZE = calcsize("<BBBhhhh")
-
-    # [TelemetryType(B), HubType(B)]
-    HUB_INFO_FORMAT = "<BB"
-    HUB_INFO_SIZE = calcsize(HUB_INFO_FORMAT)
 
     # [TelemetryType(B), BatteryPercentage(B)]
     HUB_STATE_FORMAT = "<BB"
@@ -239,17 +220,6 @@ class TelemetryCollector:
     def __init__(self):
         self.payload = bytearray(TelemetryProtocol.MAX_SIZE)
 
-    def collect_hub_info(self):
-        pack_into(
-            TelemetryProtocol.HUB_INFO_FORMAT,
-            self.payload,
-            0,
-            TelemetryType.HUB_INFO,
-            hub_controller.hub_type()
-        )
-
-        return bytes(self.payload)[:TelemetryProtocol.HUB_INFO_SIZE]
-
     def collect_hub_state(self):
         pack_into(
             TelemetryProtocol.HUB_STATE_FORMAT,
@@ -263,7 +233,7 @@ class TelemetryCollector:
 
     def collect_hub_imu(self):
         pitch, roll = hub.imu.tilt()
-        heading = hub.imu.heading('3D')
+        heading = hub.imu.heading()
 
         pack_into(
             TelemetryProtocol.HUB_IMU_FORMAT,
@@ -344,9 +314,6 @@ async def update_sensor_states_loop():
         await wait(100)
 
 async def broadcast_telemetry_loop():
-    data = telemetry_collector.collect_hub_info()
-    await app_data.write_bytes(data)
-
     for data in telemetry_collector.collect_motor_limits():
         await app_data.write_bytes(data)
 

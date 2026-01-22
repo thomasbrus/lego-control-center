@@ -86,18 +86,22 @@ export async function disconnect(hub: Hub) {
 export async function startRepl(hub: Hub) {
   DeviceUtls.assertConnected(hub.device);
   await PybricksCommands.startReplUserProgram(hub.device);
-  await waitForReplReady(hub);
 }
 
-function waitForReplReady(hub: Hub) {
+export function waitForStdout(hub: Hub, message: string) {
   return new Promise<void>((resolve) => {
     DeviceUtls.assertConnected(hub.device);
+    let terminalOutput = "";
 
     const listener = (event: Event) => {
       const target = event.target as BluetoothRemoteGATTCharacteristic;
       const notification = target.value && NotificationParsing.parseNotification(target.value, new Date());
 
-      if (notification?.eventType === EventType.WriteStdout && notification.message.endsWith(">>> ")) {
+      if (notification?.eventType === EventType.WriteStdout) {
+        terminalOutput += notification.message;
+      }
+
+      if (terminalOutput.includes(message)) {
         target.removeEventListener("characteristicvaluechanged", listener);
         resolve();
       }
@@ -112,7 +116,8 @@ function waitForReplReady(hub: Hub) {
 export async function writeStdinWithResponse(hub: Hub, message: string, options: { onProgress?: (progress: number) => void } = {}) {
   DeviceUtls.assertConnected(hub.device);
   HubUtils.assertCapabilities(hub);
-  const commands = PybricksCommands.createWriteStdinCommands(message, hub.capabilities.maxWriteSize);
+
+  const commands = PybricksCommands.createWriteStdinCommands(message, getMaxWriteSize(hub) - 1);
   return await PybricksCommands.writeCommandsWithResponse(hub.device, commands, options);
 }
 
@@ -138,4 +143,17 @@ export async function enterPasteMode(hub: Hub) {
 
 export async function exitPasteMode(hub: Hub) {
   await writeStdinWithResponse(hub, "\x04");
+}
+
+function getMaxWriteSize(hub: Hub): number {
+  switch (hub.type?.id) {
+    case "technic-hub":
+      // See https://github.com/pybricks/pybricks-micropython/blob/162b97ca28ee26b2b39c5b38bc6cd986255e265e/lib/pbio/platform/technic_hub/pbsysconfig.h#L19
+      return 20;
+    case "prime-hub":
+      // See https://github.com/pybricks/pybricks-micropython/blob/162b97ca28ee26b2b39c5b38bc6cd986255e265e/lib/pbio/platform/prime_hub/pbsysconfig.h#L21
+      return 64;
+    default:
+      throw new Error("Unknown hub type for determining max write size");
+  }
 }

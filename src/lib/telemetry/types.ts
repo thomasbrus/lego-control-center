@@ -1,12 +1,6 @@
-import { HubType } from "../hub/types";
 import { SensorType } from "../sensor/type";
 
-export type TelemetryType = "HubInfo" | "HubState" | "HubIMU" | "MotorLimits" | "MotorState" | "SensorState";
-
-export interface HubInfoTelemetry {
-  type: "HubInfo";
-  hubType: HubType;
-}
+export type TelemetryType = "HubState" | "HubIMU" | "MotorLimits" | "MotorState" | "SensorState";
 
 export interface HubStateTelemetry {
   type: "HubState";
@@ -47,10 +41,4 @@ export interface SensorStateTelemetry {
   value3: number;
 }
 
-export type TelemetryEvent =
-  | HubInfoTelemetry
-  | HubStateTelemetry
-  | HubIMUTelemetry
-  | MotorLimitsTelemetry
-  | MotorStateTelemetry
-  | SensorStateTelemetry;
+export type TelemetryEvent = HubStateTelemetry | HubIMUTelemetry | MotorLimitsTelemetry | MotorStateTelemetry | SensorStateTelemetry;
