@@ -263,7 +263,7 @@ class TelemetryCollector:
 
     def collect_hub_imu(self):
         pitch, roll = hub.imu.tilt()
-        heading = hub.imu.heading('3D')
+        heading = hub.imu.heading()
 
         pack_into(
             TelemetryProtocol.HUB_IMU_FORMAT,
