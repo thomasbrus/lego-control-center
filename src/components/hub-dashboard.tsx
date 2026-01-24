@@ -1,6 +1,7 @@
 import { Device } from "@/lib/device/types";
 import { Hub, HubStatus } from "@/lib/hub/types";
 import * as HubUtils from "@/lib/hub/utils";
+import { useModeContext } from "@/lib/mode/hooks";
 import { TelemetryEvent } from "@/lib/telemetry/types";
 import { useState } from "react";
 import Masonry from "react-layout-masonry";
@@ -18,6 +19,7 @@ export function HubDashboard({ hub }: { hub: Hub }) {
   const [terminalOutput, setTerminalOutput] = useState<string>("");
   const [telemetryEvents, setTelemetryEvents] = useState<TelemetryEvent[]>([]);
   const [progress, setPRogress] = useState<number>(0);
+  const { debug } = useModeContext();
 
   function handleTerminalOutput(output: string) {
     setTerminalOutput((prev) => prev + output);
@@ -50,14 +52,16 @@ export function HubDashboard({ hub }: { hub: Hub }) {
           onDisconnect={handleDisconnect}
         />
       )}
-      <Masonry columns={{ 0: 1, 768: 2, 1280: 3 }} gap={24}>
-        {HubUtils.isAtLeastStatus(hub, HubStatus.Connected) && <HubCard hub={hub} progress={progress} />}
-        {Array.from(hub.devices ?? []).map(([port, device]) => renderDevice({ port, device }))}
-        {HubUtils.isAtLeastStatus(hub, HubStatus.Ready) && <IMUCard hub={hub} />}
-        {HubUtils.isAtLeastStatus(hub, HubStatus.Ready) && <LightCard hub={hub} />}
-        {HubUtils.isAtLeastStatus(hub, HubStatus.Running) && <TelemetryCard telemetryEvents={telemetryEvents} />}
-        {HubUtils.isAtLeastStatus(hub, HubStatus.Connected) && <TerminalCard terminalOutput={terminalOutput} />}
-      </Masonry>
+      {HubUtils.isAtLeastStatus(hub, HubStatus.Connected) && (
+        <Masonry columns={{ 0: 1, 768: 2, 1280: 3 }} gap={24}>
+          {<HubCard hub={hub} progress={progress} />}
+          {Array.from(hub.devices ?? []).map(([port, device]) => renderDevice({ port, device }))}
+          {HubUtils.isAtLeastStatus(hub, HubStatus.Ready) && <IMUCard hub={hub} />}
+          {HubUtils.isAtLeastStatus(hub, HubStatus.Ready) && <LightCard hub={hub} />}
+          {debug && HubUtils.isAtLeastStatus(hub, HubStatus.Running) && <TelemetryCard telemetryEvents={telemetryEvents} />}
+          {debug && HubUtils.isAtLeastStatus(hub, HubStatus.LaunchingDeviceDetection) && <TerminalCard terminalOutput={terminalOutput} />}
+        </Masonry>
+      )}
     </styled.main>
   );
 }

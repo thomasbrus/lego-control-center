@@ -172,11 +172,11 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
       }
 
       await uploadProgram("setup");
-      await uploadProgram("hubDevices");
+      await uploadProgram("devices");
 
       const runningHub = replaceHub(hub.id, { ...launchingDeviceDetectionHub, status: HubStatus.Running });
 
-      onTelemetryEventRefs.get(hub.id)!({ type: "HubDevices", devices: ["motor", "color-distance-sensor", null, null, null, null] });
+      onTelemetryEventRefs.get(hub.id)!({ type: "Devices", devices: ["motor", "color-distance-sensor", null, null, null, null] });
 
       return runningHub;
     },

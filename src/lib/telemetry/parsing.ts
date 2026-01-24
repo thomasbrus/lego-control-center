@@ -9,10 +9,10 @@ export function parseTelemetryEvent(buffer: ArrayBuffer): TelemetryEvent {
   const telemetryType = view.getUint8(0);
 
   switch (telemetryType) {
-    case 0x10: // HUB_DEVICES
+    case 0x10:
       // [TelemetryType(B), DeviceTypeA(B), DeviceTypeB(B), DeviceTypeC(B), DeviceTypeD(B), DeviceTypeE(B), DeviceTypeF(B)]
       return {
-        type: "HubDevices",
+        type: "Devices",
         devices: [...Array(6)].map((_, i) => decodeDeviceId(view.getUint8(1 + i))),
       };
 

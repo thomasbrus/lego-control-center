@@ -31,46 +31,34 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
     ],
   }),
-  validateSearch: (search) => ({
-    mode: typeof search.mode === "string" ? search.mode : "live",
-  }),
   shellComponent: RootDocument,
   component: RootComponent,
   notFoundComponent: NotFoundPage,
 });
 
 function RootComponent() {
-  const { simulated, setSimulated } = useModeContext();
+  const { simulated, setSimulated, debug, setDebug } = useModeContext();
 
   return (
     <styled.div bg="gray.2" position="fixed" inset="0" display="grid" gridTemplateRows="auto 1fr">
-      <styled.header
-        bg="white"
-        // color="colorPalette.12"
-        px="8"
-        py="6"
-        // borderBottomWidth="1"
-        // borderColor="colorPalette.6"
-        top="0"
-        display="flex"
-        alignItems="center"
-        gap="4"
-        colorPalette="[primary]"
-      >
+      <styled.header bg="white" px="8" py="6" top="0" display="flex" alignItems="center" gap="4" colorPalette="[primary]">
         <Heading>LEGO Control Center</Heading>
-        <Switch.Root
+        <Switch.Default
+          label="Live"
           checked={!simulated}
           onCheckedChange={(details) => setSimulated(!details.checked)}
           size="sm"
+          colorPalette={simulated ? "gray" : "success"}
+          cursor="pointer"
+        />
+        <Switch.Default
+          label="Debug"
+          checked={debug}
+          onCheckedChange={(details) => setDebug(details.checked)}
+          size="sm"
           colorPalette="gray"
           cursor="pointer"
-        >
-          <Switch.Control>
-            <Switch.Thumb />
-          </Switch.Control>
-          <Switch.Label>Live mode</Switch.Label>
-          <Switch.HiddenInput />
-        </Switch.Root>
+        />
       </styled.header>
       <styled.main overflow="auto">
         <Outlet />
@@ -86,7 +74,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <ModeProvider mode={Route.useSearch().mode}>{children}</ModeProvider>
+        <ModeProvider>{children}</ModeProvider>
         <Scripts />
       </body>
     </html>

@@ -46,7 +46,7 @@ function applyTelemetryToModel(prevHub: Hub, event: TelemetryEvent): Hub {
   const nextHub: Hub = { ...prevHub };
 
   switch (event.type) {
-    case "HubDevices":
+    case "Devices":
       const devices = new Map();
 
       event.devices.forEach((device, port) => {

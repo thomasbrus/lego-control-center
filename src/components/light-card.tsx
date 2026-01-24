@@ -6,7 +6,7 @@ import { createListCollection } from "@ark-ui/react";
 import { ArrowLeftIcon, ArrowRightIcon, LightbulbIcon } from "lucide-react";
 import { useState } from "react";
 import { css } from "styled-system/css";
-import { Box, Flex, HStack, styled } from "styled-system/jsx";
+import { Flex, HStack, styled } from "styled-system/jsx";
 import { SystemStyleObject } from "styled-system/types";
 import { ValueChangeDetails } from "./ui/select";
 
@@ -52,7 +52,7 @@ const lightCollection = createListCollection({
 });
 
 export function LightCard({ hub }: { hub: Hub }) {
-  const [light, setLight] = useState<number>(8);
+  const [light, setLight] = useState<number>(5);
 
   function handleTurnOff() {
     HubCommands.setHubLight(hub, 0);
@@ -76,47 +76,45 @@ export function LightCard({ hub }: { hub: Hub }) {
           Light
         </Card.Title>
       </Card.Header>
-      <Card.Body>
-        <Box px="6" py="8" pb="12" borderRadius="l2" borderWidth="1px" borderColor="border">
-          <Flex justifyContent="space-around" columnGap="4" rowGap="8" alignItems="center" flexWrap="wrap" maxW="sm" mx="auto">
-            <styled.div w="full">
-              <Select.Default
-                label="Color"
-                collection={lightCollection}
-                disabled={!HubUtils.isConnected(hub)}
-                value={[String(light)]}
-                onValueChange={handleValueChange}
-              >
-                {lightCollection.items.map((item) => (
-                  <Select.Item key={item.value} item={item}>
-                    <Select.ItemText>{item.label}</Select.ItemText>
-                    <Select.ItemIndicator />
-                  </Select.Item>
-                ))}
-              </Select.Default>
-            </styled.div>
-            <IconButton variant="surface" onClick={() => setLight(light - 1)} disabled={light <= 1}>
-              <ArrowLeftIcon />
-            </IconButton>
-            <styled.span
-              {...css.raw({
-                ...lightColorPaletteProps(light),
-                w: "8",
-                h: "8",
-                bg: "colorPalette.6",
-                borderRadius: "full",
-                "--primary": "token(colors.colorPalette.8)",
-                "--secondary": "token(colors.colorPalette.3)",
-                boxShadow:
-                  "[inset 0 0 5px token(colors.colorPalette.11), inset 2px 0 8px var(--primary), inset -2px 0 8px var(--secondary), inset 2px 0 12px var(--primary), inset -2px 0 12px var(--secondary), 0 0 5px #fff, -1px 0 8px var(--primary), 1px 0 8px var(--secondary)]",
-              })}
-            />
+      <Card.Body gap="6">
+        <styled.div w="full">
+          <Select.Default
+            label="Color"
+            collection={lightCollection}
+            disabled={!HubUtils.isConnected(hub)}
+            value={[String(light)]}
+            onValueChange={handleValueChange}
+          >
+            {lightCollection.items.map((item) => (
+              <Select.Item key={item.value} item={item}>
+                <Select.ItemText>{item.label}</Select.ItemText>
+                <Select.ItemIndicator />
+              </Select.Item>
+            ))}
+          </Select.Default>
+        </styled.div>
+        <Flex justifyContent="space-between" alignItems="center" columnGap="4" rowGap="8">
+          <IconButton variant="surface" onClick={() => setLight(light - 1)} disabled={light <= 1}>
+            <ArrowLeftIcon />
+          </IconButton>
+          <styled.span
+            {...css.raw({
+              ...lightColorPaletteProps(light),
+              w: "8",
+              h: "8",
+              bg: "colorPalette.6",
+              borderRadius: "full",
+              "--primary": "token(colors.colorPalette.8)",
+              "--secondary": "token(colors.colorPalette.4)",
+              boxShadow:
+                "[inset 0 0 5px token(colors.colorPalette.11), inset 2px 0 8px var(--primary), inset -2px 0 8px var(--secondary), inset 2px 0 12px var(--primary), inset -2px 0 12px var(--secondary), -1px 0 16px var(--primary), 1px 0 4px var(--secondary)]",
+            })}
+          />
 
-            <IconButton variant="surface" onClick={() => setLight(light + 1)} disabled={light >= lightCollection.items.length}>
-              <ArrowRightIcon />
-            </IconButton>
-          </Flex>
-        </Box>
+          <IconButton variant="surface" onClick={() => setLight(light + 1)} disabled={light >= lightCollection.items.length}>
+            <ArrowRightIcon />
+          </IconButton>
+        </Flex>
       </Card.Body>
       <Card.Footer>
         <Button disabled={!HubUtils.isRunning(hub)} onClick={handleTurnOff} variant="plain">

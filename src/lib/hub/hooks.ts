@@ -143,7 +143,7 @@ export function useHub() {
 
       const launchingDeviceDetectionHub = replaceHub(hub.id, { ...hub, status: HubStatus.LaunchingDeviceDetection });
       await HubCommands.uploadModule(hub, "setup", options);
-      await HubCommands.uploadModule(hub, "hubDevices", options);
+      await HubCommands.uploadModule(hub, "devices", options);
 
       return replaceHub(hub.id, { ...launchingDeviceDetectionHub, status: HubStatus.Running });
     },
