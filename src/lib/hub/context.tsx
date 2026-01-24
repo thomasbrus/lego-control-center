@@ -43,60 +43,75 @@ export const idleHub: Hub = {
 ────────────────────────── */
 
 function applyTelemetryToModel(prevHub: Hub, event: TelemetryEvent): Hub {
-  const nextHub: Hub = {
-    ...prevHub,
-    motors: prevHub?.motors ? new Map(prevHub.motors) : undefined,
-  };
+  const nextHub: Hub = { ...prevHub };
 
   switch (event.type) {
-    case "HubState":
-      nextHub.batteryPercentage = event.batteryPercentage;
-      break;
+    case "HubDevices":
+      const devices = new Map();
 
-    case "HubIMU":
-      nextHub.imu = {
-        pitch: event.pitch,
-        roll: event.roll,
-        heading: event.heading,
-      };
-      break;
-
-    case "MotorLimits": {
-      nextHub.motors ||= new Map();
-      const prevMotor = nextHub.motors.get(event.port);
-
-      nextHub.motors.set(event.port, {
-        ...prevMotor,
-        limits: {
-          speed: event.speed,
-          acceleration: event.acceleration,
-          torque: event.torque,
-        },
+      event.devices.forEach((device, port) => {
+        switch (device) {
+          case "motor":
+            devices.set(port, { type: "motor", motor: {} });
+            break;
+          case "color-distance-sensor":
+            devices.set(port, { type: "color-distance-sensor", colorDistanceSensor: {} });
+            break;
+        }
       });
-      break;
-    }
 
-    case "MotorState": {
-      nextHub.motors ||= new Map();
-      const prevMotor = nextHub.motors.get(event.port);
+      nextHub.devices = devices;
 
-      nextHub.motors.set(event.port, {
-        ...prevMotor,
-        angle: event.angle,
-        speed: event.speed,
-        load: event.load,
-        isStalled: event.isStalled,
-      });
       break;
-    }
 
-    case "SensorState":
-      nextHub.sensors ||= new Map();
-      nextHub.sensors.set(event.port, {
-        type: event.sensorType,
-        values: [event.value0, event.value1, event.value2, event.value3],
-      });
-      break;
+    // case "HubState":
+    //   nextHub.batteryPercentage = event.batteryPercentage;
+    //   break;
+
+    // case "HubIMU":
+    //   nextHub.imu = {
+    //     pitch: event.pitch,
+    //     roll: event.roll,
+    //     heading: event.heading,
+    //   };
+    //   break;
+
+    // case "MotorLimits": {
+    //   nextHub.motors ||= new Map();
+    //   const prevMotor = nextHub.motors.get(event.port);
+
+    //   nextHub.motors.set(event.port, {
+    //     ...prevMotor,
+    //     limits: {
+    //       speed: event.speed,
+    //       acceleration: event.acceleration,
+    //       torque: event.torque,
+    //     },
+    //   });
+    //   break;
+    // }
+
+    // case "MotorState": {
+    //   nextHub.motors ||= new Map();
+    //   const prevMotor = nextHub.motors.get(event.port);
+
+    //   nextHub.motors.set(event.port, {
+    //     ...prevMotor,
+    //     angle: event.angle,
+    //     speed: event.speed,
+    //     load: event.load,
+    //     isStalled: event.isStalled,
+    //   });
+    //   break;
+    // }
+
+    // case "SensorState":
+    //   nextHub.sensors ||= new Map();
+    //   nextHub.sensors.set(event.port, {
+    //     type: event.sensorType,
+    //     values: [event.value0, event.value1, event.value2, event.value3],
+    //   });
+    //   break;
   }
 
   return nextHub;

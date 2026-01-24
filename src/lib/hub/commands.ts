@@ -1,7 +1,10 @@
 import * as DeviceUtls from "@/lib/device/utils";
 import * as HubUtils from "@/lib/hub/utils";
 import * as PybricksCommands from "@/lib/pybricks/commands";
+import { assert } from "@/lib/utils";
 import * as NotificationParsing from "../notification/parsing";
+import { programModules } from "../program/modules";
+import { minifyPybricksCode } from "../program/utils";
 import { createWriteStdinCommand, EventType } from "../pybricks/protocol";
 import { Hub } from "./types";
 
@@ -113,7 +116,7 @@ export function waitForStdout(hub: Hub, message: string) {
   });
 }
 
-export async function writeStdinWithResponse(hub: Hub, message: string, options: { onProgress?: (progress: number) => void } = {}) {
+export async function writeStdinWithResponse(hub: Hub, message: string, options: ProgressOptions | {} = {}) {
   DeviceUtls.assertConnected(hub.device);
   HubUtils.assertCapabilities(hub);
 
@@ -121,20 +124,30 @@ export async function writeStdinWithResponse(hub: Hub, message: string, options:
   return await PybricksCommands.writeCommandsWithResponse(hub.device, commands, options);
 }
 
+function getMaxWriteSize(hub: Hub): number {
+  assert(!!hub.type?.id, "Unknown hub type to determine max write size");
+  return { "technic-hub": 20, "prime-hub": 64 }[hub.type.id];
+}
+
 /**
  * Write binary data to the hub's AppData buffer.
- * This is used for real-time control commands (motor speeds, light control, etc.)
+ * This is used for real-time control commands (motor speeds, motor angles, etc.)
  * instead of stdin text commands.
  *
  * @param hub The connected hub
  * @param data Binary data to write (e.g., packed struct with command + args)
- * @param offset Offset in the AppData buffer (default 0)
  */
-export async function writeAppData(hub: Hub, data: ArrayBuffer, offset: number = 0) {
+export async function writeAppData(hub: Hub, data: ArrayBuffer) {
   DeviceUtls.assertConnected(hub.device);
   HubUtils.assertCapabilities(hub);
-  const commands = PybricksCommands.createWriteAppDataCommands(data, hub.capabilities.maxWriteSize, offset);
+  const commands = PybricksCommands.createWriteAppDataCommands(data, hub.capabilities.maxWriteSize, 0);
   return await PybricksCommands.writeCommandsWithResponse(hub.device, commands);
+}
+
+export async function uploadModule(hub: Hub, name: keyof typeof programModules, options: ProgressOptions) {
+  await enterPasteMode(hub);
+  await writeStdinWithResponse(hub, minifyPybricksCode(programModules[name]), options);
+  await exitPasteMode(hub);
 }
 
 export async function enterPasteMode(hub: Hub) {
@@ -145,15 +158,5 @@ export async function exitPasteMode(hub: Hub) {
   await writeStdinWithResponse(hub, "\x04");
 }
 
-function getMaxWriteSize(hub: Hub): number {
-  switch (hub.type?.id) {
-    case "technic-hub":
-      // See https://github.com/pybricks/pybricks-micropython/blob/162b97ca28ee26b2b39c5b38bc6cd986255e265e/lib/pbio/platform/technic_hub/pbsysconfig.h#L19
-      return 20;
-    case "prime-hub":
-      // See https://github.com/pybricks/pybricks-micropython/blob/162b97ca28ee26b2b39c5b38bc6cd986255e265e/lib/pbio/platform/prime_hub/pbsysconfig.h#L21
-      return 64;
-    default:
-      throw new Error("Unknown hub type for determining max write size");
-  }
-}
+export type ProgressHandler = (progress: number) => void;
+export type ProgressOptions = { onProgress: ProgressHandler };

@@ -10,7 +10,6 @@ import { EventType } from "../pybricks/protocol";
 import * as TelemetryParsing from "../telemetry/parsing";
 import { TelemetryEvent } from "../telemetry/types";
 import { HubsContext } from "./context";
-import { programMain1, programMain2 } from "./program";
 import { Hub, HubCapabilities, HubId, HubStatus } from "./types";
 
 export function useHub() {
@@ -138,25 +137,15 @@ export function useHub() {
     [replaceHub],
   );
 
-  const launchProgram = useCallback(
-    async (hub: Hub, options: { onProgress: (progress: number) => void }) => {
+  const launchDeviceDetection = useCallback(
+    async (hub: Hub, options: HubCommands.ProgressOptions) => {
       DeviceUtls.assertConnected(hub.device);
 
-      const launchingProgramHub = replaceHub(hub.id, { ...hub, status: HubStatus.LaunchingProgram });
+      const launchingDeviceDetectionHub = replaceHub(hub.id, { ...hub, status: HubStatus.LaunchingDeviceDetection });
+      await HubCommands.uploadModule(hub, "setup", options);
+      await HubCommands.uploadModule(hub, "hubDevices", options);
 
-      const programs = [programMain1, programMain2];
-
-      for (let i = 0; i < programs.length; i++) {
-        function handleProgress(progress: number) {
-          options?.onProgress(progress / 2 + (i / programs.length) * 100);
-        }
-
-        await HubCommands.enterPasteMode(hub);
-        await HubCommands.writeStdinWithResponse(hub, programs[i], { onProgress: handleProgress });
-        await HubCommands.exitPasteMode(hub);
-      }
-
-      return replaceHub(hub.id, { ...launchingProgramHub, status: HubStatus.Running });
+      return replaceHub(hub.id, { ...launchingDeviceDetectionHub, status: HubStatus.Running });
     },
     [replaceHub],
   );
@@ -179,7 +168,7 @@ export function useHub() {
     retrieveCapabilities,
     stopNotifications,
     startRepl,
-    launchProgram,
+    launchDeviceDetection,
     disconnect,
   };
 }
@@ -196,6 +185,3 @@ export type ConnectOptions = { onDisconnect: DisconnectHandler };
 export type TerminalOutputHandler = (output: string) => void;
 export type TelemetryEventHandler = (telemetryEvent: TelemetryEvent) => void;
 export type StartNotificationsOptions = { onTerminalOutput: TerminalOutputHandler; onTelemetryEvent: TelemetryEventHandler };
-
-export type LaunchProgramProgressHandler = (progress: number) => void;
-export type LaunchProgramOptions = { onProgress: LaunchProgramProgressHandler };

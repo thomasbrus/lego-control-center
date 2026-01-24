@@ -1,21 +1,22 @@
+import { Device } from "@/lib/device/types";
 import { Hub, HubStatus } from "@/lib/hub/types";
 import * as HubUtils from "@/lib/hub/utils";
 import { TelemetryEvent } from "@/lib/telemetry/types";
 import { useState } from "react";
 import { Grid, styled } from "styled-system/jsx";
+import { ColorDistanceSensorCard } from "./color-distance-sensor-card";
 import { HubCard } from "./hub-card";
 import { HubConnectCard } from "./hub-connect-card";
 import { IMUCard } from "./imu-card";
 import { LightCard } from "./light-card";
 import { MotorCard } from "./motor-card";
-import { SensorCard } from "./sensor-card";
 import { TelemetryCard } from "./telemetry-card";
 import { TerminalCard } from "./terminal-card";
 
 export function HubDashboard({ hub }: { hub: Hub }) {
   const [terminalOutput, setTerminalOutput] = useState<string>("");
   const [telemetryEvents, setTelemetryEvents] = useState<TelemetryEvent[]>([]);
-  const [launchProgramProgress, setLaunchProgramProgress] = useState<number>(0);
+  const [progress, setPRogress] = useState<number>(0);
 
   function handleTerminalOutput(output: string) {
     setTerminalOutput((prev) => prev + output);
@@ -25,14 +26,14 @@ export function HubDashboard({ hub }: { hub: Hub }) {
     setTelemetryEvents((prev) => [...prev, event]);
   }
 
-  function handleLaunchProgramProgres(progress: number) {
-    setLaunchProgramProgress(progress);
+  function handleProgress(progress: number) {
+    setPRogress(progress);
   }
 
   function handleDisconnect() {
     setTerminalOutput("");
     setTelemetryEvents([]);
-    setLaunchProgramProgress(0);
+    setPRogress(0);
   }
 
   return (
@@ -44,24 +45,19 @@ export function HubDashboard({ hub }: { hub: Hub }) {
           description="Let's connect this hub to get started."
           onTerminalOutput={handleTerminalOutput}
           onTelemetryEvent={handleTelemetryEvent}
-          onLaunchProgramProgress={handleLaunchProgramProgres}
+          onProgress={handleProgress}
           onDisconnect={handleDisconnect}
         />
       ) : (
         <>
           <Grid gap="6">
-            <HubCard hub={hub} launchProgramProgress={launchProgramProgress} />
+            <HubCard hub={hub} progress={progress} />
             {HubUtils.isAtLeastStatus(hub, HubStatus.Ready) && <LightCard hub={hub} />}
           </Grid>
           {HubUtils.isAtLeastStatus(hub, HubStatus.Ready) && (
             <Grid gap="6">
               {<IMUCard hub={hub} />}
-              {Array.from(hub.motors ?? []).map(([port, motor]) => (
-                <MotorCard key={port} port={port} motor={motor} />
-              ))}
-              {Array.from(hub.sensors ?? []).map(([port, sensor]) => (
-                <SensorCard key={port} port={port} sensor={sensor} />
-              ))}
+              {Array.from(hub.devices ?? []).map(([port, device]) => renderDevice({ port, device }))}
             </Grid>
           )}
           <Grid gap="6">
@@ -72,4 +68,15 @@ export function HubDashboard({ hub }: { hub: Hub }) {
       )}
     </styled.main>
   );
+}
+
+function renderDevice({ port, device }: { port: number; device: Device }) {
+  switch (device.type) {
+    case "motor":
+      return <MotorCard key={port} port={port} motor={device.motor} />;
+    case "color-distance-sensor":
+      return <ColorDistanceSensorCard key={port} port={port} sensor={device.colorDistanceSensor} />;
+    default:
+      return null;
+  }
 }

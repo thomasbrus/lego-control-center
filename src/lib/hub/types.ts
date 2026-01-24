@@ -1,5 +1,4 @@
-import { Motor } from "../motor/types";
-import { Sensor } from "../sensor/type";
+import { Device } from "../device/types";
 
 export type HubId = BluetoothDevice["id"];
 
@@ -12,8 +11,7 @@ export interface Hub {
   type?: HubType;
   capabilities?: HubCapabilities;
   batteryPercentage?: number;
-  motors?: Map<number, Motor>;
-  sensors?: Map<number, Sensor>;
+  devices?: Map<number, Device>;
   imu?: HubIMU;
 }
 
@@ -26,7 +24,7 @@ export enum HubStatus {
   StartingNotifications,
   RetrievingCapabilities,
   StartingRepl,
-  LaunchingProgram,
+  LaunchingDeviceDetection,
   Ready,
   Running,
 }

@@ -224,7 +224,7 @@ export class ProtocolError extends Error {
    */
   constructor(
     message: string,
-    public value: DataView
+    public value: DataView,
   ) {
     super(message);
   }

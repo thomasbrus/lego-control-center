@@ -1,9 +1,13 @@
 export interface Motor {
-  angle?: number;
-  speed?: number;
-  load?: number;
-  isStalled?: boolean;
+  state?: MotorState;
   limits?: MotorLimits;
+}
+
+export interface MotorState {
+  angle: number;
+  speed: number;
+  load: number;
+  isStalled: boolean;
 }
 
 export interface MotorLimits {

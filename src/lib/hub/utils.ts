@@ -1,6 +1,6 @@
+import { assert } from "@/lib/utils";
 import { PnpId } from "../device/types";
 import { HubCapabilityFlag } from "../pybricks/protocol";
-import { assert } from "../utils";
 import { Hub, HubCapabilities, HubStatus, HubType } from "./types";
 
 export function assertCapabilities(hub: Hub): asserts hub is Hub & { capabilities: HubCapabilities } {
