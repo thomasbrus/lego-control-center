@@ -1,4 +1,4 @@
-import { Button, Card, Icon, IconButton, Select } from "@/components/ui";
+import { Card, Icon, IconButton, Select } from "@/components/ui";
 import * as HubCommands from "@/lib/hub/commands";
 import { Hub } from "@/lib/hub/types";
 import * as HubUtils from "@/lib/hub/utils";
@@ -10,61 +10,26 @@ import { Flex, HStack, styled } from "styled-system/jsx";
 import { SystemStyleObject } from "styled-system/types";
 import { ValueChangeDetails } from "./ui/select";
 
-const lightCollection = createListCollection({
-  items: [
-    {
-      value: "1",
-      label: <SelectLabel value="1" label="Black" />,
-    },
-    {
-      value: "2",
-      label: <SelectLabel value="2" label="Red" />,
-    },
-    {
-      value: "3",
-      label: <SelectLabel value="3" label="Orange" />,
-    },
-    {
-      value: "4",
-      label: <SelectLabel value="4" label="Yellow" />,
-    },
-    {
-      value: "5",
-      label: <SelectLabel value="5" label="Green" />,
-    },
-    {
-      value: "6",
-      label: <SelectLabel value="6" label="Cyan" />,
-    },
-    {
-      value: "7",
-      label: <SelectLabel value="7" label="Blue" />,
-    },
-    {
-      value: "8",
-      label: <SelectLabel value="8" label="Violet" />,
-    },
-    {
-      value: "9",
-      label: <SelectLabel value="9" label="Magenta" />,
-    },
-  ],
+const colorNames = ["none", "red", "orange", "yellow", "green", "cyan", "blue", "violet", "magenta"];
+
+const colorNamesCollection = createListCollection({
+  items: colorNames.map((color) => ({
+    value: color,
+    label: <SelectLabel value={color} label={color.charAt(0).toUpperCase() + color.slice(1)} />,
+  })),
 });
 
 export function LightCard({ hub }: { hub: Hub }) {
-  const [light, setLight] = useState<number>(5);
-
-  function handleTurnOff() {
-    HubCommands.setHubLight(hub, 0);
-  }
-
-  function handleApply() {
-    HubCommands.setHubLight(hub, light);
-  }
+  const [colorName, setColorName] = useState<string>("none");
 
   function handleValueChange(details: ValueChangeDetails) {
-    setLight(Number(details.value));
+    const colorName = String(details.value);
+    setColorName(colorName);
+    performLightCommand(hub, colorName);
   }
+
+  const previousColorName = colorNames[colorNames.indexOf(colorName) - 1];
+  const nextColorName = colorNames[colorNames.indexOf(colorName) + 1];
 
   return (
     <Card.Root>
@@ -80,12 +45,12 @@ export function LightCard({ hub }: { hub: Hub }) {
         <styled.div w="full">
           <Select.Default
             label="Color"
-            collection={lightCollection}
+            collection={colorNamesCollection}
             disabled={!HubUtils.isConnected(hub)}
-            value={[String(light)]}
+            value={[String(colorName)]}
             onValueChange={handleValueChange}
           >
-            {lightCollection.items.map((item) => (
+            {colorNamesCollection.items.map((item) => (
               <Select.Item key={item.value} item={item}>
                 <Select.ItemText>{item.label}</Select.ItemText>
                 <Select.ItemIndicator />
@@ -94,12 +59,12 @@ export function LightCard({ hub }: { hub: Hub }) {
           </Select.Default>
         </styled.div>
         <Flex justifyContent="space-between" alignItems="center" columnGap="4" rowGap="8">
-          <IconButton variant="surface" onClick={() => setLight(light - 1)} disabled={light <= 1}>
+          <IconButton variant="surface" onClick={() => setColorName(previousColorName)} disabled={!previousColorName}>
             <ArrowLeftIcon />
           </IconButton>
           <styled.span
             {...css.raw({
-              ...lightColorPaletteProps(light),
+              ...previewColorPaletteProps(colorName),
               w: "8",
               h: "8",
               bg: "colorPalette.6",
@@ -111,19 +76,11 @@ export function LightCard({ hub }: { hub: Hub }) {
             })}
           />
 
-          <IconButton variant="surface" onClick={() => setLight(light + 1)} disabled={light >= lightCollection.items.length}>
+          <IconButton variant="surface" onClick={() => setColorName(nextColorName)} disabled={!nextColorName}>
             <ArrowRightIcon />
           </IconButton>
         </Flex>
       </Card.Body>
-      <Card.Footer>
-        <Button disabled={!HubUtils.isRunning(hub)} onClick={handleTurnOff} variant="plain">
-          Turn Off
-        </Button>
-        <Button disabled={!HubUtils.isRunning(hub)} onClick={handleApply} colorPalette="primary">
-          Apply
-        </Button>
-      </Card.Footer>
     </Card.Root>
   );
 }
@@ -131,24 +88,43 @@ export function LightCard({ hub }: { hub: Hub }) {
 function SelectLabel({ value, label }: { value: string; label: string }) {
   return (
     <HStack>
-      <styled.span {...css.raw({ ...lightColorPaletteProps(Number(value)), w: "2", h: "2", bg: "colorPalette.8", borderRadius: "full" })} />{" "}
+      <styled.span {...css.raw({ ...previewColorPaletteProps(value), w: "2", h: "2", bg: "colorPalette.8", borderRadius: "full" })} />{" "}
       {label}
     </HStack>
   );
 }
 
-function lightColorPaletteProps(value: number): SystemStyleObject {
-  const arr = [
-    css.raw({ colorPalette: "gray" }),
-    css.raw({ colorPalette: "red" }),
-    css.raw({ colorPalette: "orange" }),
-    css.raw({ colorPalette: "yellow" }),
-    css.raw({ colorPalette: "green" }),
-    css.raw({ colorPalette: "cyan" }),
-    css.raw({ colorPalette: "blue" }),
-    css.raw({ colorPalette: "violet" }),
-    css.raw({ colorPalette: "purple" }),
-  ];
+function previewColorPaletteProps(value: string): SystemStyleObject {
+  const colorPalettes: Record<string, SystemStyleObject> = {
+    none: css.raw({ colorPalette: "gray" }),
+    red: css.raw({ colorPalette: "red" }),
+    orange: css.raw({ colorPalette: "orange" }),
+    yellow: css.raw({ colorPalette: "yellow" }),
+    green: css.raw({ colorPalette: "green" }),
+    cyan: css.raw({ colorPalette: "cyan" }),
+    blue: css.raw({ colorPalette: "blue" }),
+    violet: css.raw({ colorPalette: "violet" }),
+    magenta: css.raw({ colorPalette: "purple" }),
+  };
 
-  return arr[value - 1] || arr[0];
+  return colorPalettes[value] || colorPalettes["none"];
+}
+
+function performLightCommand(hub: Hub, colorName: string) {
+  if (colorName === "none") {
+    HubCommands.turnLightOff(hub);
+  } else {
+    const colors: Record<string, { hue: number; saturation: number; value: number }> = {
+      red: { hue: 0, saturation: 100, value: 100 },
+      orange: { hue: 30, saturation: 100, value: 100 },
+      yellow: { hue: 60, saturation: 100, value: 100 },
+      green: { hue: 120, saturation: 100, value: 100 },
+      cyan: { hue: 180, saturation: 100, value: 100 },
+      blue: { hue: 240, saturation: 100, value: 100 },
+      violet: { hue: 270, saturation: 100, value: 100 },
+      magenta: { hue: 300, saturation: 100, value: 100 },
+    };
+
+    HubCommands.turnLightOn(hub, colors[colorName]);
+  }
 }

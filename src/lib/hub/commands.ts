@@ -12,11 +12,11 @@ import { Hub } from "./types";
  * Command IDs for the stdin protocol (must match hub firmware)
  */
 export enum CommandType {
-  SHUTDOWN_HUB = 0x10,
-  SET_HUB_LIGHT = 0x11,
-  SET_MOTOR_SPEEDS = 0x20,
-  STOP_ALL_MOTORS = 0x21,
-  SET_SENSOR_LIGHT = 0x30,
+  SHUTDOWN_HUB = 0x20,
+  TURN_LIGHT_ON = 0x30,
+  TURN_LIGHT_OFF = 0x31,
+  STOP_MOTOR = 0x40,
+  SET_MOTOR_SPEED = 0x41,
 }
 
 /**
@@ -51,26 +51,31 @@ export async function shutdownHub(hub: Hub) {
 }
 
 /**
- * Set the light color (index)
+ * Turn the hub light on with the specified color (hue, saturation, lightness)
  */
-export async function setHubLight(hub: Hub, colorIndex: number) {
-  const buffer = createCommandBuffer(CommandType.SET_HUB_LIGHT, [colorIndex]);
+export async function turnLightOn(hub: Hub, color: { hue: number; saturation: number; value: number }) {
+  const buffer = createCommandBuffer(CommandType.TURN_LIGHT_ON, [color.hue, color.saturation, color.value]);
+  await writeStdinCommand(hub, buffer);
+}
+
+export async function turnLightOff(hub: Hub) {
+  const buffer = createCommandBuffer(CommandType.TURN_LIGHT_OFF);
   await writeStdinCommand(hub, buffer);
 }
 
 /**
  * Set speeds for all motors (array of 4 signed shorts)
  */
-export async function setMotorSpeeds(hub: Hub, speeds: [number, number, number, number]) {
-  const buffer = createCommandBuffer(CommandType.SET_MOTOR_SPEEDS, speeds);
+export async function setMotorSpeed(hub: Hub, port: number, speed: number) {
+  const buffer = createCommandBuffer(CommandType.SET_MOTOR_SPEED, [port, speed]);
   await writeStdinCommand(hub, buffer);
 }
 
 /**
  * Stop all motors
  */
-export async function stopAllMotors(hub: Hub) {
-  const buffer = createCommandBuffer(CommandType.STOP_ALL_MOTORS);
+export async function stopMotor(hub: Hub, port: number) {
+  const buffer = createCommandBuffer(CommandType.STOP_MOTOR, [port]);
   await writeStdinCommand(hub, buffer);
 }
 

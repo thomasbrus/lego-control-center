@@ -97,11 +97,11 @@ enumerate_devices(Motor, broadcast_motor_limit)
 # endregion
 
 # region motor-state
-def broadcast_motor_state(index):
-    state = Motor(ports[index]).model.state()
+def broadcast_motor_state(port, motor):
+    state = motor.model.state()
 
     # [TelemetryType(B), Port(B), Angle(h), Speed(h), Load(h), IsStalled(B)]
-    app_data.write_bytes(pack("<BBhhhB", 0x21, index, int(state[0]), int(state[1]), int(state[2]), int(state[3])))
+    app_data.write_bytes(pack("<BBhhhB", 0x21, port, int(state[0]), int(state[1]), int(state[2]), int(state[3])))
 
 async def broadcast_motor_states_loop():
     while True: enumerate_devices(Motor, broadcast_motor_state); await wait(100)
@@ -110,18 +110,17 @@ async def broadcast_motor_states_loop():
 tasks.append(broadcast_motor_states_loop())
 
 # region motor-commands
-stdin_command_handlers[0x40] = lambda args: Motor(ports[args[0]]).stop()
-app_data_command_handlers[0x41] = lambda args: Motor(ports[args[0]]).run(args[1])
+stdin_command_handlers[0x40] = lambda args: devices[args[0]].stop()
+app_data_command_handlers[0x41] = lambda args: devices[args[0]].run(args[1])
 # endregion
 
 # region color-distance-sensor-state
-async def broadcast_cd_sensor_state(index):
-    sensor = ColorDistanceSensor(ports[index])
+async def broadcast_cd_sensor_state(port, sensor):
     hue, saturation, value = await sensor.hsv()
     distance = await sensor.distance()
 
     # [TelemetryType(B), Port(B), Hue(h), Saturation(h), Value(h), Distance(h)]
-    app_data.write_bytes(pack("<BBBhhhh", 0x30, index, hue, saturation, value, distance))
+    app_data.write_bytes(pack("<BBBhhhh", 0x30, port, hue, saturation, value, distance))
 
 async def broadcast_cd_sensor_states_loop():
     while True: await enumerate_devices(ColorDistanceSensor, broadcast_cd_sensor_state); await wait(100)
