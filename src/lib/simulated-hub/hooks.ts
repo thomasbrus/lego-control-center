@@ -5,6 +5,8 @@ import * as HubCommands from "../hub/commands";
 import * as HubHooks from "../hub/hooks";
 import { useHubsContext } from "../hub/hooks";
 import { Hub, HubStatus } from "../hub/types";
+import { programModules } from "../program/modules";
+import { minifyPybricksCode } from "../program/utils";
 import { CommandType } from "../pybricks/protocol";
 import { delay } from "../utils";
 
@@ -154,12 +156,23 @@ export function useHub(): ReturnType<typeof HubHooks.useHub> {
 
       const launchingDeviceDetectionHub = replaceHub(hub.id, { ...hub, status: HubStatus.LaunchingDeviceDetection });
 
-      options.onProgress(0);
+      async function uploadProgram(moduleName: keyof typeof programModules) {
+        const program = minifyPybricksCode(programModules[moduleName]);
+        const programSize = program.length;
+        const totalTime = 1000;
+        const numChunks = 20;
+        const chunkSize = programSize / numChunks;
 
-      for (let i = 0; i < 100; i += 5) {
-        options.onProgress(i);
-        await delay(50);
+        for (let i = 0; i < numChunks; i += 1) {
+          const chunk = program.slice(i * chunkSize, (i + 1) * chunkSize);
+          onTerminalOutputRefs.get(hub.id)!(chunk);
+          options.onProgress(Math.round(((i + 1) / numChunks) * 100));
+          await delay(totalTime / numChunks);
+        }
       }
+
+      await uploadProgram("setup");
+      await uploadProgram("hubDevices");
 
       const runningHub = replaceHub(hub.id, { ...launchingDeviceDetectionHub, status: HubStatus.Running });
 

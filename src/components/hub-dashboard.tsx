@@ -3,7 +3,8 @@ import { Hub, HubStatus } from "@/lib/hub/types";
 import * as HubUtils from "@/lib/hub/utils";
 import { TelemetryEvent } from "@/lib/telemetry/types";
 import { useState } from "react";
-import { Grid, styled } from "styled-system/jsx";
+import Masonry from "react-layout-masonry";
+import { styled } from "styled-system/jsx";
 import { ColorDistanceSensorCard } from "./color-distance-sensor-card";
 import { HubCard } from "./hub-card";
 import { HubConnectCard } from "./hub-connect-card";
@@ -37,8 +38,8 @@ export function HubDashboard({ hub }: { hub: Hub }) {
   }
 
   return (
-    <styled.main p="8" pb="16" display="grid" gridTemplateColumns="repeat(auto-fit, minmax(420px, 1fr))" gap="6" alignItems="start">
-      {hub.status === HubStatus.Idle ? (
+    <styled.main p="8" pb="16">
+      {hub.status === HubStatus.Idle && (
         <HubConnectCard
           hub={hub}
           title={hub.name}
@@ -48,24 +49,15 @@ export function HubDashboard({ hub }: { hub: Hub }) {
           onProgress={handleProgress}
           onDisconnect={handleDisconnect}
         />
-      ) : (
-        <>
-          <Grid gap="6">
-            <HubCard hub={hub} progress={progress} />
-            {HubUtils.isAtLeastStatus(hub, HubStatus.Ready) && <LightCard hub={hub} />}
-          </Grid>
-          {HubUtils.isAtLeastStatus(hub, HubStatus.Ready) && (
-            <Grid gap="6">
-              {<IMUCard hub={hub} />}
-              {Array.from(hub.devices ?? []).map(([port, device]) => renderDevice({ port, device }))}
-            </Grid>
-          )}
-          <Grid gap="6">
-            {HubUtils.isAtLeastStatus(hub, HubStatus.Running) && <TelemetryCard telemetryEvents={telemetryEvents} />}
-            {HubUtils.isAtLeastStatus(hub, HubStatus.Connected) && <TerminalCard terminalOutput={terminalOutput} />}
-          </Grid>
-        </>
       )}
+      <Masonry columns={{ 0: 1, 768: 2, 1280: 3 }} gap={24}>
+        {HubUtils.isAtLeastStatus(hub, HubStatus.Connected) && <HubCard hub={hub} progress={progress} />}
+        {Array.from(hub.devices ?? []).map(([port, device]) => renderDevice({ port, device }))}
+        {HubUtils.isAtLeastStatus(hub, HubStatus.Ready) && <IMUCard hub={hub} />}
+        {HubUtils.isAtLeastStatus(hub, HubStatus.Ready) && <LightCard hub={hub} />}
+        {HubUtils.isAtLeastStatus(hub, HubStatus.Running) && <TelemetryCard telemetryEvents={telemetryEvents} />}
+        {HubUtils.isAtLeastStatus(hub, HubStatus.Connected) && <TerminalCard terminalOutput={terminalOutput} />}
+      </Masonry>
     </styled.main>
   );
 }

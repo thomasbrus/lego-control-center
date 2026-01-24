@@ -7,7 +7,8 @@ import { Card, Icon } from "./ui";
 import { EmptyState } from "./ui/empty-state";
 
 const scrollAreaClasses = css({
-  height: "[320px]",
+  maxHeight: "[320px]",
+  height: "full",
   width: "full",
 });
 
