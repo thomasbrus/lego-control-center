@@ -1,6 +1,6 @@
 import { Card, Heading, Switch } from "@/components/ui";
-import { ModeProvider } from "@/lib/mode/context";
-import { useModeContext } from "@/lib/mode/hooks";
+import { ModeProvider } from "@/lib_old/mode/context";
+import { useModeContext } from "@/lib_old/mode/hooks";
 import type { QueryClient } from "@tanstack/react-query";
 import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import { styled } from "styled-system/jsx";

@@ -20,13 +20,15 @@
     "@tanstack/router-plugin": "^1.143.6",
     "@tanstack/store": "^0.8.0",
     "@types/web-bluetooth": "^0.0.21",
+    "immer": "^11.1.3",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-layout-masonry": "^2.0.0",
     "react-scroll-to-bottom": "^4.2.0",
     "vite-tsconfig-paths": "^5.1.4",
-    "zod": "^4.3.5"
+    "zod": "^4.3.5",
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@netlify/vite-plugin-tanstack-start": "^1.2.7",
