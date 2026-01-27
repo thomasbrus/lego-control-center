@@ -20,6 +20,7 @@ export * as ScrollArea from "./scroll-area";
 export * as SegmentGroup from "./segment-group";
 export * as Select from "./select";
 export * as Slider from "./slider";
+export { Spacer } from "./spacer";
 export { Spinner, type SpinnerProps } from "./spinner";
 export * as Switch from "./switch";
 export * as Table from "./table";

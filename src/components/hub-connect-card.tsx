@@ -1,5 +1,6 @@
 import { Button, Card } from "@/components/ui";
 import { EmptyState } from "@/components/ui/empty-state";
+import * as HubCommands from "@/lib/hub/commands";
 import * as HubHooks from "@/lib/hub/hooks";
 import { Hub, HubStatus } from "@/lib/hub/types";
 import { useModeContext } from "@/lib/mode/hooks";
@@ -12,7 +13,7 @@ export function HubConnectCard({
   description,
   onTerminalOutput,
   onTelemetryEvent,
-  onLaunchProgramProgress,
+  onProgress,
   onDisconnect,
 }: {
   hub: Hub;
@@ -20,11 +21,11 @@ export function HubConnectCard({
   description: string;
   onTerminalOutput: HubHooks.TerminalOutputHandler;
   onTelemetryEvent: HubHooks.TelemetryEventHandler;
-  onLaunchProgramProgress: HubHooks.LaunchProgramProgressHandler;
+  onProgress: HubCommands.ProgressHandler;
   onDisconnect: () => void;
 }) {
   const { simulated } = useModeContext();
-  const { connect, retrieveDeviceInfo, startNotifications, retrieveCapabilities, startRepl, launchProgram } = simulated
+  const { connect, retrieveDeviceInfo, startNotifications, retrieveCapabilities, startRepl, launchDeviceDetection } = simulated
     ? SimulatedHubHooks.useHub()
     : HubHooks.useHub();
   const { replaceHub } = HubHooks.useHubsContext();
@@ -38,9 +39,10 @@ export function HubConnectCard({
         updatedHub = await startNotifications(updatedHub, { onTerminalOutput, onTelemetryEvent });
         updatedHub = await retrieveCapabilities(updatedHub);
         updatedHub = await startRepl(updatedHub);
-        updatedHub = await launchProgram(updatedHub, { onProgress: onLaunchProgramProgress });
+        updatedHub = await launchDeviceDetection(updatedHub, { onProgress });
       } catch (error) {
         if (error instanceof Error) replaceHub(hub.id, { ...connectedHub, error, status: HubStatus.Error });
+        console.error("Error during hub connection process:", error);
       }
     }
   }

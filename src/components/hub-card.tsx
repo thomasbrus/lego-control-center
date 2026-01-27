@@ -10,7 +10,7 @@ import { BluetoothConnectedIcon } from "lucide-react";
 import { css } from "styled-system/css";
 import { styled } from "styled-system/jsx";
 
-export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgramProgress: number }) {
+export function HubCard({ hub, progress }: { hub: Hub; progress: number }) {
   const { simulated } = useModeContext();
   const { disconnect } = simulated ? SimulatedHubHooks.useHub() : HubHooks.useHub();
   const { replaceHub } = HubHooks.useHubsContext();
@@ -37,7 +37,7 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
         )}
       </Card.Header>
       <Card.Body>
-        <HubDetailsSection hub={hub} launchProgramProgress={launchProgramProgress} />
+        <HubDetailsSection hub={hub} progress={progress} />
       </Card.Body>
       <Card.Footer>
         {hub.error ? (
@@ -59,7 +59,7 @@ export function HubCard({ hub, launchProgramProgress }: { hub: Hub; launchProgra
   );
 }
 
-function HubDetailsSection({ hub, launchProgramProgress }: { hub: Hub; launchProgramProgress: number }) {
+function HubDetailsSection({ hub, progress }: { hub: Hub; progress: number }) {
   return (
     <PropertyList.Root>
       {hub.type !== undefined && (
@@ -80,11 +80,11 @@ function HubDetailsSection({ hub, launchProgramProgress }: { hub: Hub; launchPro
           <PropertyList.Value>{hub.error.message}</PropertyList.Value>
         </PropertyList.Item>
       )}
-      {hub.status === HubStatus.LaunchingProgram && (
+      {hub.status === HubStatus.LaunchingDeviceDetection && (
         <PropertyList.Item>
           <PropertyList.Label>Progress</PropertyList.Label>
           <PropertyList.Value placeSelf="auto">
-            <Progress.Default value={launchProgramProgress} colorPalette="[success]">
+            <Progress.Default value={progress} colorPalette="[success]">
               <Progress.ValueText />
             </Progress.Default>
           </PropertyList.Value>
@@ -120,8 +120,8 @@ function StatusBadge({ status }: { status: HubStatus }) {
       return <Badge colorPalette="yellow">Retrieving Capabilities...</Badge>;
     case HubStatus.StartingRepl:
       return <Badge colorPalette="yellow">Starting REPL...</Badge>;
-    case HubStatus.LaunchingProgram:
-      return <Badge colorPalette="green">Launching Program...</Badge>;
+    case HubStatus.LaunchingDeviceDetection:
+      return <Badge colorPalette="green">Launching Device Detection...</Badge>;
     case HubStatus.Ready:
       return <Badge colorPalette="blue">Ready</Badge>;
     case HubStatus.Running:
