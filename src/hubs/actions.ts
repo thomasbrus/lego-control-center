@@ -1,6 +1,7 @@
 import { hubStore } from "@/hubs/store";
 import { initialHub } from "@/hubs/hub";
 import { HubId } from "@/hubs/id";
+import { requestDeviceOptions } from "./bluetooth";
 
 export interface HubActions {
   shutdown(): Promise<void>;
@@ -10,6 +11,10 @@ export interface HubActions {
   stopMotor(port: number): Promise<void>;
   get isConnected(): boolean;
   disconnect(): void;
+}
+
+export async function connectAndSetupHub(_hubId: HubId) {
+  await navigator.bluetooth.requestDevice(requestDeviceOptions);
 }
 
 export function resetHub(hubId: HubId) {

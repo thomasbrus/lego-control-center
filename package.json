@@ -24,6 +24,7 @@
     "@types/web-bluetooth": "^0.0.21",
     "immer": "^11.1.3",
     "lucide-react": "^0.562.0",
+    "node-poweredup": "^10.1.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-layout-masonry": "^2.0.0",

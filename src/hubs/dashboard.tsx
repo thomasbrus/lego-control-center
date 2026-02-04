@@ -4,6 +4,7 @@ import { BluetoothIcon } from "lucide-react";
 import { Flex, styled } from "styled-system/jsx";
 import { HubId } from "@/hubs/id";
 import { hubStore } from "@/hubs/store";
+import { connectAndSetupHub } from "./actions";
 
 export function HubDashboard({ children }: { children: React.ReactNode }) {
   return (
@@ -26,7 +27,7 @@ function ConnectCard({ hubId }: { hubId: HubId }) {
   const { debug } = useSearch({ from: "/" });
 
   async function handleConnect() {
-    // await connectAndSetupHub(hubId, true);
+    await connectAndSetupHub(hubId);
   }
 
   async function handleSimulatedConnect() {
