@@ -1,15 +1,10 @@
-import { LegoControlCenter } from "@/components/lego-control-center";
-import { HubsProvider } from "@/lib/hub/context";
+import { DashboardPage } from "@/dashboard/page";
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 
 export const Route = createFileRoute("/")({
-  component: RouteComponent,
+  validateSearch: z.object({
+    debug: z.boolean().optional().catch(false),
+  }),
+  component: DashboardPage,
 });
-
-function RouteComponent() {
-  return (
-    <HubsProvider>
-      <LegoControlCenter />
-    </HubsProvider>
-  );
-}
